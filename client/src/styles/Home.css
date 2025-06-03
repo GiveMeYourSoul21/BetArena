@@ -1,0 +1,119 @@
+/* Hero Section Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-content {
+  animation: fadeIn 1s ease-out;
+}
+
+/* Card Hover Effects */
+.game-card {
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Button Hover Effects */
+.button-hover {
+  transition: all 0.3s ease;
+}
+
+.button-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Section Transitions */
+.section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Background Gradients */
+.bg-gradient-dark {
+  background: linear-gradient(to bottom, #1a1a1a, #2d2d2d);
+}
+
+.bg-gradient-red {
+  background: linear-gradient(135deg, #ff4444, #cc0000);
+}
+
+/* Удалено переворачивание карточек - новый эффект наведения */
+.card-flip {
+  perspective: 1000px;
+  overflow: hidden;
+}
+
+.card-inner {
+  transition: transform 0.4s ease-out, box-shadow 0.4s ease;
+}
+
+.card-flip:hover .card-inner {
+  transform: scale(1.05);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2.5rem;
+  }
+  
+  .game-card {
+    margin-bottom: 2rem;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cc0000;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff0000;
+}
+
+/* Ensure no horizontal scroll and proper full-width display */
+html, body, #root {
+  overflow-x: hidden;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-width: 100%;
+}
+
+/* Hero section styles */
+.hero-section {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+} 
