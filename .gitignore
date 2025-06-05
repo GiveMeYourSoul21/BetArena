@@ -5,8 +5,16 @@ server/node_modules/
 
 # Production builds
 client/build/
-client/dist/ 
-client/
+client/dist/
+build/
+dist/
+
+# React specific
+client/.env
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
 
 # Environment variables
 .env
@@ -14,6 +22,10 @@ client/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Cache directories
+client/.eslintcache
+.eslintcache
 
 # Logs
 npm-debug.log*
@@ -30,9 +42,22 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+client/coverage/
 
 # nyc test coverage
 .nyc_output
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
 
 # OS generated files
 .DS_Store
@@ -48,6 +73,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # Temporary folders
 tmp/
@@ -63,4 +90,12 @@ server/uploads/*
 
 # Package lock files (можно раскомментировать если нужно)
 # package-lock.json
-# client/package-lock.json 
+# client/package-lock.json
+
+# Debug files
+debug.log
+server/debug.log
+client/debug.log
+
+# Test files (если есть временные тестовые файлы)
+test-*.js 
