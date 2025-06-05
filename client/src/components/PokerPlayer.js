@@ -34,7 +34,7 @@ const PokerPlayer = ({
   // Стили для аватара с учетом fold
   const avatarStyle = `w-28 h-28 rounded-full overflow-hidden border-3 shadow-lg transition-all duration-300
     ${hasFolded ? 'opacity-30 grayscale border-gray-600' : 
-      player?.isBot ? 'border-gray-500 opacity-70' : 'border-blue-400'}
+      player?.isBot ? 'border-gray-500' : 'border-blue-400'}
     ${isSelf && !hasFolded ? 'border-yellow-400 shadow-yellow-500/30' : ''}
     ${isCurrentTurn && !hasFolded ? 'border-4 border-green-400 shadow-green-500/80 animate-pulse ring-4 ring-green-300' : ''}`;
 
@@ -216,8 +216,8 @@ const PokerPlayer = ({
               {displayChips.toLocaleString()}
             </div>
 
-            {/* Таймер-полоска прямо под балансом - внутри панели */}
-            {isCurrentTurn && !hasFolded && (
+            {/* Таймер-полоска прямо под балансом - внутри панели - ТОЛЬКО для игроков, НЕ ботов */}
+            {isCurrentTurn && !hasFolded && !player?.isBot && (
               <div className="w-full mt-2">
                 <div className={`h-2 bg-black rounded-full overflow-hidden border border-white shadow-lg`} style={{
                   boxShadow: '0 0 10px rgba(255,255,255,0.4), inset 0 0 5px rgba(0,0,0,0.5)'

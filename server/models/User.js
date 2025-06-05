@@ -1,79 +1,96 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
+module.exports = (sequelize) => {
+  const User = sequelize.define('User', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
   username: {
-    type: String,
-    required: true,
+      type: DataTypes.STRING(20),
+      allowNull: false,
     unique: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 20
+      validate: {
+        len: [3, 20],
+        notEmpty: true
+      }
   },
   email: {
-    type: String,
-    required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     unique: true,
-    trim: true,
-    lowercase: true
+      validate: {
+        isEmail: true,
+        notEmpty: true
+      },
+      set(value) {
+        this.setDataValue('email', value.toLowerCase().trim());
+      }
   },
   password: {
-    type: String,
-    required: true,
-    minlength: 6
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: [6, 255]
+      }
   },
   chips: {
-    type: Number,
-    default: 1000
+      type: DataTypes.INTEGER,
+      defaultValue: 1000,
+      validate: {
+        min: 0
+      }
   },
   lastBonus: {
-    type: Date,
-    default: null
+      type: DataTypes.DATE,
+      allowNull: true,
+      defaultValue: null,
+      field: 'lastBonus'
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  games: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PokerGame'
-  }],
-  statistics: {
-    gamesPlayed: {
-      type: Number,
-      default: 0
-    },
-    gamesWon: {
-      type: Number,
-      default: 0
-    },
-    totalEarnings: {
-      type: Number,
-      default: 0
-    },
-    highestWin: {
-      type: Number,
-      default: 0
+    statistics: {
+      type: DataTypes.JSON,
+      defaultValue: {
+        gamesPlayed: 0,
+        gamesWon: 0,
+        totalEarnings: 0,
+        highestWin: 0
+      }
     }
-  }
-});
-
-// Хеширование пароля перед сохранением
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
+  }, {
+    tableName: 'users',
+    timestamps: false,
+    underscored: false,
+    hooks: {
+      beforeCreate: async (user) => {
+        if (user.password) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed('password')) {
     const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      }
   }
 });
 
 // Метод для сравнения паролей
-userSchema.methods.comparePassword = async function(candidatePassword) {
+  User.prototype.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema); 
+  // Связи с другими моделями
+  User.associate = function(models) {
+    // User может иметь много игр
+    User.hasMany(models.PokerGame, {
+      foreignKey: 'userId',
+      as: 'games'
+    });
+  };
+
+  return User;
+}; 

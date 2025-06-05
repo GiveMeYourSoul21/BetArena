@@ -4,46 +4,162 @@
 
 // Создание новой колоды карт
 function createDeck() {
+  const crypto = require('crypto');
   const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
   const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   
   const deck = [];
   
+  // Добавляем дополнительную энтропию через временную метку и случайный байт
+  const timestamp = Date.now();
+  const randomSeed = crypto.randomBytes(8).toString('hex');
+  console.log(`[CARDS] 🎲 Создаем колоду с временной меткой: ${timestamp}, seed: ${randomSeed}`);
+  
   // Создаем колоду из всех комбинаций масти и значения
   for (const suit of suits) {
     for (const value of values) {
-      deck.push({ suit, value });
+      deck.push({ 
+        suit, 
+        value,
+        // Добавляем уникальный ID для отслеживания карт
+        id: `${value}-${suit}-${timestamp}-${randomSeed}`
+      });
     }
   }
   
-  // Перемешиваем колоду
-  return shuffleDeck(deck);
-}
-
-// Перемешивание колоды (алгоритм Фишера-Йейтса)
-function shuffleDeck(deck) {
-  const shuffled = [...deck];
-  
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  // Проверяем что создалось ровно 52 карты
+  if (deck.length !== 52) {
+    console.error(`[CARDS] ❌ ОШИБКА: Создана колода из ${deck.length} карт вместо 52!`);
+  } else {
+    console.log(`[CARDS] ✅ Создана колода из ${deck.length} карт`);
   }
+  
+  // Перемешиваем колоду несколько раз для лучшей рандомизации
+  let shuffled = shuffleDeck(deck);
+  shuffled = shuffleDeck(shuffled);  // Дополнительное перемешивание
+  
+  console.log(`[CARDS] 🔀 Колода перемешана дважды для максимальной рандомизации`);
   
   return shuffled;
 }
 
+// Перемешивание колоды (алгоритм Фишера-Йейтса с криптографически безопасным генератором)
+function shuffleDeck(deck) {
+  const crypto = require('crypto');
+  const shuffled = [...deck];
+  
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Используем криптографически безопасный генератор случайных чисел
+    const randomBytes = crypto.randomBytes(4);
+    const randomInt = randomBytes.readUInt32BE(0);
+    const j = randomInt % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  
+  console.log(`[CARDS] ✅ Колода перемешана криптографически безопасным генератором`);
+  return shuffled;
+}
+
+// НОВАЯ ФУНКЦИЯ: Проверка уникальности всех карт в игре
+function validateGameCards(game) {
+  const allCards = new Set();
+  const duplicates = [];
+  const cardsList = [];
+  
+  // Собираем все карты игроков
+  for (let i = 0; i < game.players.length; i++) {
+    if (game.players[i].cards) {
+      for (const card of game.players[i].cards) {
+        if (card && card.value && card.suit) {
+          const cardKey = `${card.value}-${card.suit}`;
+          cardsList.push(`Игрок ${i} (${game.players[i].username}): ${cardKey}`);
+          
+          if (allCards.has(cardKey)) {
+            duplicates.push(`Игрок ${i} (${game.players[i].username}): ${cardKey}`);
+          } else {
+            allCards.add(cardKey);
+          }
+        }
+      }
+    }
+  }
+  
+  // Собираем общие карты
+  if (game.settings && game.settings.communityCards) {
+    for (const card of game.settings.communityCards) {
+      if (card && card.value && card.suit) {
+        const cardKey = `${card.value}-${card.suit}`;
+        cardsList.push(`Общие карты: ${cardKey}`);
+        
+        if (allCards.has(cardKey)) {
+          duplicates.push(`Общие карты: ${cardKey}`);
+        } else {
+          allCards.add(cardKey);
+        }
+      }
+    }
+  }
+  
+  // Логируем все карты для отладки
+  console.log(`[CARDS] 📋 Все карты в игре:`);
+  cardsList.forEach(cardInfo => console.log(`[CARDS]   - ${cardInfo}`));
+  
+  if (duplicates.length > 0) {
+    console.error(`[CARDS] ❌ ОБНАРУЖЕНЫ ДУБЛИКАТЫ КАРТ:`, duplicates);
+    return {
+      isValid: false,
+      errors: duplicates,
+      totalCards: allCards.size,
+      duplicateCount: duplicates.length
+    };
+  }
+  
+  console.log(`[CARDS] ✅ Проверка карт пройдена. Всего уникальных карт: ${allCards.size}`);
+  return {
+    isValid: true,
+    totalCards: allCards.size,
+    duplicateCount: 0
+  };
+}
+
 // Раздача карт игрокам
 function dealCards(game) {
-  // Создаем или обновляем колоду, если нужно
-  if (!game.deck || game.deck.length < game.players.length * 2) {
-    game.deck = createDeck();
-  }
+  // ИСПРАВЛЕНИЕ: Всегда создаем НОВУЮ перемешанную колоду для каждой игры
+  console.log(`[CARDS] Создаем новую колоду для игры`);
+  game.deck = createDeck();
+  console.log(`[CARDS] Создана новая перемешанная колода из ${game.deck.length} карт`);
+  
+  // ДОБАВЛЕНО: Создаем множество использованных карт для проверки дубликатов
+  const usedCards = new Set();
   
   // Раздаем карты игрокам
   for (let i = 0; i < game.players.length; i++) {
     const isBot = !!game.players[i].isBot;
+    
+    // ДОБАВЛЕНО: Проверяем что в колоде достаточно карт
+    if (game.deck.length < 2) {
+      console.error(`[CARDS] ❌ Недостаточно карт в колоде для игрока ${i}!`);
+      break;
+    }
+    
     const card1 = game.deck.pop();
     const card2 = game.deck.pop();
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем дубликаты
+    const card1Key = `${card1.value}-${card1.suit}`;
+    const card2Key = `${card2.value}-${card2.suit}`;
+    
+    if (usedCards.has(card1Key) || usedCards.has(card2Key) || card1Key === card2Key) {
+      console.error(`[CARDS] ❌ ДУБЛИКАТ КАРТ для игрока ${i}: ${card1Key}, ${card2Key}`);
+      console.error(`[CARDS] Уже использованные карты:`, Array.from(usedCards));
+      // Можно попробовать взять другие карты или пересоздать колоду
+      continue;
+    }
+    
+    usedCards.add(card1Key);
+    usedCards.add(card2Key);
+    
+    console.log(`[CARDS] Игрок ${i} (${game.players[i].username}): ${card1.value} ${card1.suit}, ${card2.value} ${card2.suit}`);
     
     // Явно устанавливаем видимость карт
     game.players[i].cards = [
@@ -60,66 +176,134 @@ function dealCards(game) {
     ];
   }
   
+  console.log(`[CARDS] Роздано ${game.players.length * 2} карт. Осталось в колоде: ${game.deck.length}`);
+  
+  // ДОБАВЛЕНО: Проверяем валидность всех карт после раздачи
+  const cardsValidation = validateGameCards(game);
+  if (!cardsValidation.isValid) {
+    console.error(`[CARDS] ❌ КРИТИЧЕСКАЯ ОШИБКА при раздаче карт:`, cardsValidation.errors);
+  } else {
+    console.log(`[CARDS] ✅ Все карты уникальны после раздачи. Всего карт: ${cardsValidation.totalCards}`);
+  }
+  
   return game;
 }
 
 // Раздача общих карт на стол
-function dealCommunityCards(game, count = 0) {
-  if (!game.communityCards) {
-    game.communityCards = [];
+function dealCommunityCards(deck, count, game) {
+  // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Теперь принимаем игру для проверки всех выданных карт
+  console.log(`[CARDS] 🃏 Начинаем выдачу ${count} общих карт`);
+  const cards = [];
+  
+  // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем достаточно ли карт в колоде
+  if (!deck || !Array.isArray(deck)) {
+    console.error('[CARDS] ❌ Колода недоступна или не является массивом!');
+    return cards;
   }
   
-  // Определяем, сколько карт нужно раздать
-  // В зависимости от раунда: флоп (3), тёрн (1), ривер (1)
-  let cardsToAdd = 0;
+  if (deck.length < count) {
+    console.error(`[CARDS] ❌ В колоде недостаточно карт! Нужно: ${count}, доступно: ${deck.length}`);
+    return cards;
+  }
   
-  if (count > 0) {
-    cardsToAdd = count;
-  } else {
-    switch (game.currentRound) {
-      case 'flop':
-        cardsToAdd = 3 - game.communityCards.length;
-        break;
-      case 'turn':
-      case 'river':
-        cardsToAdd = 1;
-        break;
-      default:
-        cardsToAdd = 0;
+  // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Собираем ВСЕ уже выданные карты в игре
+  const allUsedCards = new Set();
+  
+  // Добавляем карты игроков
+  if (game && game.players) {
+    game.players.forEach((player, playerIndex) => {
+      if (player.cards && Array.isArray(player.cards)) {
+        player.cards.forEach(card => {
+          if (card && card.suit && card.value) {
+            const cardKey = `${card.value}-${card.suit}`;
+            allUsedCards.add(cardKey);
+            console.log(`[CARDS] ♠️ Игрок ${playerIndex} (${player.username}) имеет карту: ${cardKey}`);
+          }
+        });
+      }
+    });
+  }
+  
+  // Добавляем уже выложенные общие карты
+  if (game && game.settings && game.settings.communityCards) {
+    game.settings.communityCards.forEach(card => {
+      if (card && card.suit && card.value) {
+        const cardKey = `${card.value}-${card.suit}`;
+        allUsedCards.add(cardKey);
+        console.log(`[CARDS] 🎴 Общая карта уже на столе: ${cardKey}`);
+      }
+    });
+  }
+  
+  console.log(`[CARDS] 📊 Всего уже выданных карт в игре: ${allUsedCards.size}`);
+  console.log(`[CARDS] 📦 Карт в колоде перед выдачей: ${deck.length}`);
+  
+  // ДОБАВЛЕНО: Создаем множество карт выданных в этом вызове для проверки дубликатов
+  const thisCallCards = new Set();
+  
+  // Пытаемся выдать нужное количество карт
+  let attempts = 0;
+  const maxAttempts = deck.length * 2; // Защита от бесконечного цикла
+  
+  for (let i = 0; i < count && attempts < maxAttempts; attempts++) {
+    if (deck.length === 0) {
+      console.error('[CARDS] ❌ Колода пуста! Не могу выдать общие карты');
+      break;
     }
-  }
-  
-  // Принудительно создаем новую колоду для каждой раздачи
-  game.deck = createDeck();
-  
-  // Если это флоп (3 карты), принудительно разные масти
-  if (game.currentRound === 'flop' && cardsToAdd === 3) {
-    // Создаем карты разных мастей принудительно
-    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     
-    // Перемешиваем масти и значения
-    const shuffledSuits = shuffleArray([...suits]);
-    const shuffledValues = shuffleArray([...values]);
+    const card = deck.pop();
     
-    // Берем первые 3 масти и 3 значения
-    for (let i = 0; i < 3; i++) {
-      game.communityCards.push({
-        suit: shuffledSuits[i % 4],
-        value: shuffledValues[i % 13],
-        hidden: false
-      });
+    // ИСПРАВЛЕНО: Проверяем что карта не дублируется
+    if (!card || !card.suit || !card.value) {
+      console.error('[CARDS] ❌ Получена пустая или невалидная карта из колоды!');
+      continue; // Переходим к следующей попытке
     }
-  } else {
-    // Для других раундов (терн, ривер) - стандартная логика
-  for (let i = 0; i < cardsToAdd; i++) {
-      const card = game.deck.pop();
-      card.hidden = false;
-      game.communityCards.push(card);
+    
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Проверяем дубликаты карт во ВСЕЙ игре
+    const cardKey = `${card.value}-${card.suit}`;
+    
+    if (allUsedCards.has(cardKey)) {
+      console.error(`[CARDS] ❌ ДУБЛИКАТ КАРТЫ ОБНАРУЖЕН в игре: ${cardKey}! Возвращаем в конец колоды...`);
+      deck.unshift(card); // Возвращаем карту в начало колоды
+      continue; // Переходим к следующей попытке
     }
+    
+    if (thisCallCards.has(cardKey)) {
+      console.error(`[CARDS] ❌ ДУБЛИКАТ КАРТЫ в этом вызове: ${cardKey}! Возвращаем в конец колоды...`);
+      deck.unshift(card); // Возвращаем карту в начало колоды
+      continue; // Переходим к следующей попытке
+    }
+    
+    // Карта уникальная, добавляем её
+    allUsedCards.add(cardKey);
+    thisCallCards.add(cardKey);
+    
+    console.log(`[CARDS] ✅ Выдаем карту ${i + 1}/${count}: ${card.value} ${card.suit}`);
+    
+    cards.push({
+      suit: card.suit,
+      value: card.value,
+      hidden: false // Общие карты всегда открыты
+    });
+    
+    i++; // Увеличиваем счетчик только при успешной выдаче карты
   }
   
-  return game;
+  if (attempts >= maxAttempts) {
+    console.error(`[CARDS] ❌ КРИТИЧЕСКАЯ ОШИБКА: Достигнуто максимальное количество попыток (${maxAttempts}) при выдаче карт!`);
+  }
+  
+  console.log(`[CARDS] ✅ Выдано ${cards.length}/${count} общих карт:`, cards.map(c => `${c.value} ${c.suit}`).join(', '));
+  console.log(`[CARDS] 📦 Осталось в колоде: ${deck.length}`);
+  
+  // ДОБАВЛЕНО: Финальная проверка что мы не выдали дубликаты
+  const cardKeys = cards.map(c => `${c.value}-${c.suit}`);
+  const uniqueCards = new Set(cardKeys);
+  if (cardKeys.length !== uniqueCards.size) {
+    console.error(`[CARDS] ❌ КРИТИЧЕСКАЯ ОШИБКА: Выданы дубликаты в одном вызове!`, cardKeys);
+  }
+  
+  return cards;
 }
 
 // Вспомогательная функция для перемешивания массива
@@ -134,32 +318,86 @@ function shuffleArray(array) {
 
 // Переход к следующему раунду
 function nextRound(game) {
+  console.log(`[ROUND] ====== ПЕРЕХОД К СЛЕДУЮЩЕМУ РАУНДУ ======`);
+  
+  // Инициализируем settings если не существует
+  if (!game.settings) {
+    game.settings = {};
+  }
+  
+  // Защита от множественного вызова
+  if (game.settings.roundTransition) {
+    console.log(`[ROUND] 🚫 Переход к раунду уже в процессе, игнорируем повторный вызов`);
+    return game;
+  }
+  game.settings.roundTransition = true;
+  
+  // Инициализируем communityCards если не существует
+  if (!game.settings.communityCards) {
+    game.settings.communityCards = [];
+  }
+  
   // Сбрасываем флаги действий игроков
-  game.players.forEach(player => {
-    player.hasActed = false;
+  console.log(`[ROUND] 🔄 СБРОС hasActed для нового раунда`);
+  game.players.forEach((player, index) => {
+    if (!player.folded) {
+      player.hasActed = false;
+      console.log(`[ROUND] Сбрасываем hasActed для игрока ${index}: ${player.username}`);
+    }
   });
   
+  const currentRound = game.settings.currentRound || 'preflop';
+  console.log(`[ROUND] Текущий раунд: ${currentRound}`);
+  
   // Переходим к следующему раунду
-  switch (game.currentRound) {
+  switch (currentRound) {
     case 'preflop':
-      game.currentRound = 'flop';
-      dealCommunityCards(game);
+      game.settings.currentRound = 'flop';
+      // СТРОГАЯ проверка - выдавать карты только если флоп НЕ выложен
+      if (!game.settings.communityCards || game.settings.communityCards.length === 0) {
+        console.log(`[ROUND] ✅ Выдаем ФЛОП (3 карты)`);
+        const flopCards = dealCommunityCards(game.deck, 3, game);
+        game.settings.communityCards = [...flopCards];
+        console.log(`[ROUND] Переход к флопу, выложено ${flopCards.length} карт:`, flopCards.map(c => `${c.value} ${c.suit}`).join(', '));
+      } else {
+        console.log(`[ROUND] ❌ ФЛОП УЖЕ ВЫЛОЖЕН (${game.settings.communityCards.length} карт), НЕ выдаем карты`);
+      }
       break;
     case 'flop':
-      game.currentRound = 'turn';
-      dealCommunityCards(game);
+      game.settings.currentRound = 'turn';
+      // СТРОГАЯ проверка - выдавать карты только если терн НЕ выложен
+      if (game.settings.communityCards && game.settings.communityCards.length === 3) {
+        console.log(`[ROUND] ✅ Выдаем ТЕРН (1 карта)`);
+        const turnCards = dealCommunityCards(game.deck, 1, game);
+        game.settings.communityCards.push(...turnCards);
+        console.log(`[ROUND] Переход к терну, выложена ${turnCards.length} карта:`, turnCards.map(c => `${c.value} ${c.suit}`).join(', '));
+      } else {
+        console.log(`[ROUND] ❌ ТЕРН УЖЕ ВЫЛОЖЕН (${game.settings.communityCards?.length || 0} карт), НЕ выдаем карты`);
+      }
       break;
     case 'turn':
-      game.currentRound = 'river';
-      dealCommunityCards(game);
+      game.settings.currentRound = 'river';
+      // СТРОГАЯ проверка - выдавать карты только если ривер НЕ выложен
+      if (game.settings.communityCards && game.settings.communityCards.length === 4) {
+        console.log(`[ROUND] ✅ Выдаем РИВЕР (1 карта)`);
+        const riverCards = dealCommunityCards(game.deck, 1, game);
+        game.settings.communityCards.push(...riverCards);
+        console.log(`[ROUND] Переход к риверу, выложена ${riverCards.length} карта:`, riverCards.map(c => `${c.value} ${c.suit}`).join(', '));
+      } else {
+        console.log(`[ROUND] ❌ РИВЕР УЖЕ ВЫЛОЖЕН (${game.settings.communityCards?.length || 0} карт), НЕ выдаем карты`);
+      }
       break;
     case 'river':
-      game.currentRound = 'showdown';
+      game.settings.currentRound = 'showdown';
+      console.log(`[ROUND] Переход к шоудауну`);
+      // Снимаем блокировку перед showdown
+      game.settings.roundTransition = false;
       // Определяем победителя
-      break;
+      return determineWinner(game);
     default:
       // Уже на showdown, завершаем игру
       game.status = 'finished';
+      game.settings.roundTransition = false;
   }
 
   // На новом раунде первый ход делает первый активный игрок после дилера
@@ -176,14 +414,35 @@ function nextRound(game) {
     nextPlayerIndex = (nextPlayerIndex + 1) % playersCount;
   }
   
-  game.currentTurn = nextPlayerIndex;
+  console.log(`[ROUND] Позиция дилера: ${dealerIndex}`);
+  console.log(`[ROUND] Новый раунд ${game.settings.currentRound}, ход игрока ${nextPlayerIndex} (${game.players[nextPlayerIndex]?.username})`);
+  
+  game.settings.currentTurn = nextPlayerIndex;
+  
+  // Снимаем блокировку перехода раунда
+  game.settings.roundTransition = false;
+  
+  // ДОБАВЛЕНО: Проверяем уникальность всех карт в игре после раунда
+  const gameValidation = validateGameCards(game);
+  if (!gameValidation.isValid) {
+    console.error(`[ROUND] ❌ КРИТИЧЕСКАЯ ОШИБКА после перехода к раунду ${game.settings.currentRound}:`, gameValidation.errors);
+  } else {
+    console.log(`[ROUND] ✅ Проверка карт после раунда ${game.settings.currentRound} прошла успешно`);
+  }
+  
   return game;
 }
 
 // Переход хода к следующему игроку
 function nextTurn(game) {
+  // Инициализируем settings если не существует
+  if (!game.settings) {
+    game.settings = {};
+  }
+  
+  const currentTurn = game.settings.currentTurn || 0;
   const playersCount = game.players.length;
-  let nextPlayerIndex = (game.currentTurn + 1) % playersCount;
+  let nextPlayerIndex = (currentTurn + 1) % playersCount;
   
   // Если все игроки сделали ход, переходим к следующему раунду
   let allPlayersActed = true;
@@ -221,7 +480,7 @@ function nextTurn(game) {
     nextPlayerIndex = (nextPlayerIndex + 1) % playersCount;
   }
   
-  game.currentTurn = nextPlayerIndex;
+  game.settings.currentTurn = nextPlayerIndex;
   return game;
 }
 
@@ -308,6 +567,16 @@ function evaluateHand(cards) {
 
 // Определение победителя
 function determineWinner(game) {
+  console.log(`[SHOWDOWN] 🏁 Начинаем определение победителя`);
+  
+  // ДОБАВЛЕНО: Финальная проверка всех карт в игре перед шоудауном
+  const gameValidation = validateGameCards(game);
+  if (!gameValidation.isValid) {
+    console.error(`[SHOWDOWN] ❌ КРИТИЧЕСКАЯ ОШИБКА перед шоудауном:`, gameValidation.errors);
+  } else {
+    console.log(`[SHOWDOWN] ✅ Финальная проверка карт перед шоудауном прошла успешно`);
+  }
+  
   // Определяем активных игроков (не сбросивших карты)
   const activePlayers = game.players.filter(p => !p.folded);
   
@@ -330,8 +599,16 @@ function determineWinner(game) {
   
   // Если игра дошла до вскрытия, определяем сильнейшую комбинацию
   const playersWithHandRanks = activePlayers.map(player => {
+    // Инициализируем settings если не существует
+    if (!game.settings) {
+      game.settings = {};
+    }
+    if (!game.settings.communityCards) {
+      game.settings.communityCards = [];
+    }
+    
     // Объединяем карты игрока с общими картами
-    const hand = [...player.cards, ...game.communityCards];
+    const hand = [...player.cards, ...game.settings.communityCards];
     
     // Оцениваем комбинацию
     const { rank, name, cards } = evaluateHand(hand);
@@ -382,10 +659,15 @@ function determineWinner(game) {
   game.pot = 0;
   game.status = 'finished';
   
+  // ИСПРАВЛЕНО: Устанавливаем showdown когда игра дошла до вскрытия с несколькими игроками
+  game.showdown = activePlayers.length > 1;
+  
   // Формируем строку с именами победителей
   game.winner = winners.map(w => w.player.username || 'Игрок ' + w.playerIndex).join(', ');
   game.winningHand = winners[0].handName;
   game.winningCombination = getCardDescriptions(winners[0].bestCards);
+  
+  console.log(`[ROUND] Победитель шоудауна: ${game.winner} с комбинацией ${game.winningHand}`);
   
   return game;
 }
@@ -660,5 +942,6 @@ module.exports = {
   nextRound,
   nextTurn,
   evaluateHand,
-  determineWinner
+  determineWinner,
+  validateGameCards
 }; 

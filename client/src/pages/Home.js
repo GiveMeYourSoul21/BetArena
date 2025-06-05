@@ -41,11 +41,10 @@ function Home() {
       navigate('/login');
       return;
     }
-
     try {
       const response = await axios.post(`${API_URL}/api/game/create`, {
         type,
-        userId: user._id,
+        userId: user.id,
         settings: {
           decks: type === 'blackjack' ? (settings.decks || 6) : 1,
           initialBet: settings.initialBet || 10
@@ -64,7 +63,7 @@ function Home() {
     }
     try {
       const response = await axios.post(`${API_URL}/api/poker/create`, {
-        userId: user._id,
+        userId: user.id,
         username: user.username,
         settings: {
           numBots: 3 // Фиксированное количество ботов
@@ -95,7 +94,7 @@ function Home() {
     try {
       const response = await axios.post(`${API_URL}/api/game/create`, {
         type: 'blackjack',
-        userId: user._id,
+        userId: user.id,
         settings: {
           decks: 6,
           initialBet: 10

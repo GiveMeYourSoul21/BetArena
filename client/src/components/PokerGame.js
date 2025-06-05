@@ -277,10 +277,10 @@ function PokerGame() {
     // Обновляем данные из gameData
     if (gameData?.players) {
       Object.values(positions).forEach(pos => {
-        const player = gameData.players.find(p => p.position === pos.index);
+        const player = gameData.players.find(p => p && p.position === pos.index);
         if (player) {
           pos.name = player.username || pos.name;
-          pos.chips = player.chips;
+          pos.chips = player.chips || 1000; // Защита от undefined
           pos.currentBet = player.currentBet || 0;
           pos.folded = player.folded || false;
           pos.isAllIn = player.isAllIn || false;
@@ -537,32 +537,32 @@ function PokerGame() {
         </div>
 
         {/* Позиции игроков */}
-        {Object.entries(playerPositions).map(([position, player]) => (
+        {playerPositions && Object.entries(playerPositions).map(([position, player]) => (
           <div
             key={position}
-            className={`absolute transition-all duration-300 ${player.isCurrentTurn ? 'scale-110 z-50' : 'scale-100 z-10'}`}
+            className={`absolute transition-all duration-300 ${player?.isCurrentTurn ? 'scale-110 z-50' : 'scale-100 z-10'}`}
             style={{
-              left: player.x,
-              top: player.y,
-              transform: `translate(-50%, -50%) rotate(${player.rotation}deg)`,
+              left: player?.x || 0,
+              top: player?.y || 0,
+              transform: `translate(-50%, -50%) rotate(${player?.rotation || 0}deg)`,
               width: '120px',
               height: '160px'
             }}
           >
             <div className="relative w-full h-full flex flex-col items-center"
-                 style={{ transform: `rotate(-${player.rotation}deg)` }}>
+                 style={{ transform: `rotate(-${player?.rotation || 0}deg)` }}>
               {/* Маркер позиции */}
               <div 
                 className={`absolute -top-6 left-1/2 transform -translate-x-1/2 
-                  ${getPositionColor(player.position, player.isCurrentTurn)} 
+                  ${getPositionColor(player?.position, player?.isCurrentTurn)} 
                   px-2 py-1 rounded-full text-white text-xs font-bold 
                   border-2 shadow-lg z-10`}
               >
-                {player.position}
+                {player?.position}
               </div>
 
               {/* Индикатор текущего хода */}
-              {player.isCurrentTurn && (
+              {player?.isCurrentTurn && (
                 <div className="absolute -top-12 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                   <div className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm animate-bounce shadow-lg">
                     Ваш хід!
@@ -572,12 +572,12 @@ function PokerGame() {
 
               {/* Аватар с подсветкой текущего хода */}
               <div className={`w-16 h-16 rounded-full overflow-hidden border-2 ${
-                player.isCurrentTurn ? 'border-purple-400 shadow-lg shadow-purple-500/50' : 'border-gray-300'
+                player?.isCurrentTurn ? 'border-purple-400 shadow-lg shadow-purple-500/50' : 'border-gray-300'
               }`}>
                 <img 
-                  src={player.avatar} 
-                  alt={player.name}
-                  className={`w-full h-full object-cover ${player.isCurrentTurn ? 'scale-110' : ''} transition-transform duration-300`}
+                  src={player?.avatar} 
+                  alt={player?.name}
+                  className={`w-full h-full object-cover ${player?.isCurrentTurn ? 'scale-110' : ''} transition-transform duration-300`}
                 />
               </div>
               
@@ -585,27 +585,27 @@ function PokerGame() {
               <div className="mt-2 flex flex-col items-center">
                 {/* Имя игрока */}
                 <span className={`text-white text-sm font-medium ${
-                  player.isCurrentTurn ? 'text-purple-300' : ''
+                  player?.isCurrentTurn ? 'text-purple-300' : ''
                 }`}>
-                  {player.name}
+                  {player?.name}
                 </span>
                 
                 {/* Баланс игрока */}
                 <div className={`mt-1 bg-black bg-opacity-80 px-3 py-1 rounded-md ${
-                  player.isCurrentTurn ? 'ring-2 ring-purple-500' : ''
+                  player?.isCurrentTurn ? 'ring-2 ring-purple-500' : ''
                 }`}>
                   <span className={`text-sm font-bold ${
-                    player.chips < 1000 ? 'text-red-400' : 
-                    player.isCurrentTurn ? 'text-purple-400' :
+                    (player?.chips || 1000) < 1000 ? 'text-red-400' : 
+                    player?.isCurrentTurn ? 'text-purple-400' :
                     'text-yellow-400'
                   }`}>
-                    {player.chips}
+                    {player?.chips || 1000}
                   </span>
                 </div>
               </div>
 
               {/* Таймер хода */}
-              {player.isCurrentTurn && (
+              {player?.isCurrentTurn && (
                 <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-full">
                   <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
                     <div className="h-full bg-purple-500 animate-timer" style={{ width: '100%' }}></div>
@@ -619,12 +619,12 @@ function PokerGame() {
               </div>
 
               {/* Ставки и блайнды */}
-              {(player.currentBet > 0 || player.position === 'SB' || player.position === 'BB') && (
+              {(player?.currentBet > 0 || player?.position === 'SB' || player?.position === 'BB') && (
                 <div 
                   className="absolute"
                   style={{
-                    left: player.betPosition.x - player.x,
-                    top: player.betPosition.y - player.y,
+                    left: player?.betPosition.x - player?.x,
+                    top: player?.betPosition.y - player?.y,
                     transform: 'translate(-50%, -50%)'
                   }}
                 >
@@ -635,9 +635,9 @@ function PokerGame() {
                       className="w-12 h-12 object-contain"
                     />
                     <span className="text-white text-sm font-bold bg-black bg-opacity-80 px-2 py-1 rounded mt-1">
-                      {player.currentBet > 0 ? player.currentBet : 
-                       player.position === 'SB' ? 10 :
-                       player.position === 'BB' ? 20 : ''}
+                      {player?.currentBet > 0 ? player?.currentBet : 
+                       player?.position === 'SB' ? 10 :
+                       player?.position === 'BB' ? 20 : ''}
                     </span>
                   </div>
                 </div>

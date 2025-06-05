@@ -1,40 +1,38 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { User } = require('../models');
 
 /**
  * Middleware для перевірки аутентифікації
  */
-module.exports = async (req, res, next) => {
+const auth = async (req, res, next) => {
   try {
-    // Отримуємо токен з заголовка
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    // Получаем токен из заголовка
+    const authHeader = req.headers.authorization;
     
-    if (!token) {
-      return res.status(401).json({ message: 'Доступ заборонено, необхідна аутентифікація' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Токен доступу не надано' });
     }
     
-    // Верифікуємо токен
+    const token = authHeader.split(' ')[1];
+    
+    // Проверяем токен
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
     
-    // Знаходимо користувача
-    const user = await User.findById(decoded.userId);
+    // Находим пользователя
+    const user = await User.findByPk(decoded.userId, {
+      attributes: { exclude: ['password'] }
+    });
     
     if (!user) {
       return res.status(401).json({ message: 'Користувач не знайдений' });
     }
     
-    // Додаємо дані користувача до запиту
-    req.user = {
-      id: user._id,
-      username: user.username,
-      email: user.email
-    };
-    
+    // Добавляем пользователя в объект запроса
+    req.user = user;
     next();
   } catch (error) {
     console.error('Помилка аутентифікації:', error);
     
-    // Різні помилки JWT
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Недійсний токен' });
     }
@@ -43,6 +41,8 @@ module.exports = async (req, res, next) => {
       return res.status(401).json({ message: 'Термін дії токена закінчився' });
     }
     
-    res.status(500).json({ message: 'Помилка сервера' });
+    res.status(500).json({ message: 'Помилка сервера при аутентифікації' });
   }
-}; 
+};
+
+module.exports = auth; 

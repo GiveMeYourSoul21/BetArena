@@ -110,10 +110,6 @@ function Profile() {
     return <div className="text-center">Завантаження профілю...</div>;
   }
 
-  const winRate = user.gamesPlayed > 0
-    ? ((user.gamesWon / user.gamesPlayed) * 100).toFixed(1)
-    : 0;
-
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-gray-800 rounded-lg p-6">
@@ -144,24 +140,12 @@ function Profile() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400">Зіграно ігор</label>
-            <p className="text-xl">{user.statistics?.gamesPlayed || 0}</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Виграно ігор</label>
-            <p className="text-xl">{user.statistics?.gamesWon || 0}</p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400">Відсоток перемог</label>
-            <p className="text-xl">{winRate}%</p>
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-gray-400">Учасник з</label>
             <p className="text-xl">
-              {new Date(user.createdAt).toLocaleDateString('uk-UA')}
+              {user.lastBonus 
+                ? new Date(user.lastBonus).toLocaleDateString('uk-UA')
+                : 'Дата невідома'
+              }
             </p>
           </div>
 

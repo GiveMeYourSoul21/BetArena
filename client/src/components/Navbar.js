@@ -10,28 +10,25 @@ function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const createGame = async (type) => {
+  // Функция для создания игры в блэкджек напрямую
+  const createBlackjackGame = async () => {
     if (!user) {
       navigate('/login');
       return;
     }
-
     try {
       const response = await axios.post(`${API_URL}/api/game/create`, {
-        type,
-        userId: user._id,
+        type: 'blackjack',
+        userId: user.id || user._id,
         settings: {
-          decks: type === 'blackjack' ? 6 : 1,
+          decks: 6,
           initialBet: 10
         }
       });
-      if (type === 'blackjack') {
-        navigate(`/blackjack/${response.data._id}`);
-      } else {
-      navigate(`/game/${response.data._id}`);
-      }
+      // Перенаправляем на страницу блэкджека, а не общую страницу игры
+      navigate(`/blackjack/${response.data._id}`);
     } catch (error) {
-      console.error('Ошибка при создании игры:', error);
+      console.error('Ошибка при создании игры в блэкджек:', error);
     }
   };
 
@@ -42,12 +39,16 @@ function Navbar() {
     }
     try {
       const response = await axios.post(`${API_URL}/api/poker/create`, {
-        userId: user._id,
+        userId: user.id || user._id,
         username: user.username,
         settings: {
-          numBots: 3
+          numBots: 3 // Фиксированное количество ботов
         }
       });
+      console.log('Ответ сервера:', response.data);
+      console.log('ID игры:', response.data.gameId || response.data._id);
+      
+      // Используем gameId если есть, иначе _id
       const gameId = response.data.gameId || response.data._id;
       navigate(`/game/${gameId}`);
     } catch (error) {
@@ -71,7 +72,7 @@ function Navbar() {
           {user && (
             <>
               <button
-                onClick={() => createGame('blackjack')}
+                onClick={createBlackjackGame}
                 className="text-gray-300 hover:text-white transition-colors bg-transparent border-none cursor-pointer px-0"
                 style={{ background: 'none', border: 'none' }}
               >

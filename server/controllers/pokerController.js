@@ -1,5 +1,4 @@
-const PokerGame = require('../models/PokerGame');
-const User = require('../models/User');
+const { PokerGame, User } = require('../models');
 const { 
   createDeck, 
   dealCards 
@@ -13,12 +12,21 @@ exports.createGame = async (req, res) => {
     
     console.log('userId:', userId, 'username:', username);
     
-    // Получаем пользователя если есть userId
-    if (userId) {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Пользователь не найден' });
-    }
+    // ИСПРАВЛЕНО: Создаем пользователя если его нет, или используем существующего
+    let user = null;
+    try {
+      if (userId && userId.toString().match(/^\d+$/)) {
+        // Если userId - число, ищем в базе
+        user = await User.findByPk(userId);
+        if (!user) {
+          console.log(`[CONTROLLER] Пользователь с ID ${userId} не найден, продолжаем без проверки`);
+        }
+      } else {
+        // Если userId - строка, то это просто имя пользователя
+        console.log(`[CONTROLLER] userId "${userId}" не является числом, используем как username`);
+      }
+    } catch (userError) {
+      console.log(`[CONTROLLER] Ошибка при поиске пользователя, продолжаем без проверки:`, userError.message);
     }
     
     // Рандомно выбираем позицию дилера (0-3)
@@ -95,26 +103,29 @@ exports.createGame = async (req, res) => {
       settings: {
         maxPlayers: 4,
         smallBlind: 10,
-        bigBlind: 20
+        bigBlind: 20,
+        currentTurn: utgPosition,
+        currentRound: 'preflop',
+        dealerPosition: dealerPosition
       },
       dealerPosition: dealerPosition,
       winner: null,
       winningHand: null,
-      createdAt: new Date()
+      user_id: userId
     };
     
-    const newGame = new PokerGame(gameData);
+    const newGame = await PokerGame.create(gameData);
 
     // Раздаем карты
     dealCards(newGame);
     
     await newGame.save();
     
-    console.log(`Игра создана через контроллер: ${newGame._id}`);
+    console.log(`Игра создана через контроллер: ${newGame.id}`);
 
     res.status(201).json({
       message: 'Игра создана',
-      gameId: newGame._id,
+      gameId: newGame.id,
       dealerPosition: newGame.dealerPosition,
       players: newGame.players
     });
@@ -129,7 +140,7 @@ exports.getGame = async (req, res) => {
   try {
     const { gameId } = req.params;
     
-    const game = await PokerGame.findById(gameId);
+    const game = await PokerGame.findByPk(gameId);
     if (!game) {
       return res.status(404).json({ message: 'Игра не найдена' });
     }
@@ -146,7 +157,7 @@ exports.startGame = async (req, res) => {
   try {
     const { gameId } = req.params;
     
-    const game = await PokerGame.findById(gameId);
+    const game = await PokerGame.findByPk(gameId);
     if (!game) {
       return res.status(404).json({ message: 'Игра не найдена' });
     }
@@ -190,7 +201,7 @@ exports.exitGame = async (req, res) => {
     const { gameId } = req.params;
     const { userId } = req.body;
 
-    const game = await PokerGame.findById(gameId);
+    const game = await PokerGame.findByPk(gameId);
     if (!game) {
       return res.status(404).json({ message: 'Игра не найдена' });
     }
@@ -201,10 +212,66 @@ exports.exitGame = async (req, res) => {
       await game.save();
     }
 
-    res.json({ message: 'Успешный выход из игры' });
+    // Удаляем игру из базы данных
+    await PokerGame.destroy({ where: { id: gameId } });
+
+    res.json({ message: 'Вы вышли из игры' });
   } catch (error) {
     console.error('Ошибка при выходе из игры:', error);
     res.status(500).json({ message: 'Ошибка при выходе из игры' });
+  }
+};
+
+// Присоединение к игре
+exports.joinGame = async (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const { userId, username } = req.body;
+
+    const game = await PokerGame.findByPk(gameId);
+    if (!game) {
+      return res.status(404).json({ message: 'Игра не найдена' });
+    }
+
+    if (game.status !== 'waiting') {
+      return res.status(400).json({ message: 'Нельзя присоединиться к начатой или завершённой игре' });
+    }
+
+    if (game.players.length >= 4) {
+      return res.status(400).json({ message: 'Игра полна' });
+    }
+
+    // Проверяем, не присоединён ли уже пользователь
+    const existingPlayer = game.players.find(p => p.user === userId);
+    if (existingPlayer) {
+      return res.status(400).json({ message: 'Вы уже в этой игре' });
+    }
+
+    // Добавляем игрока
+    game.players.push({
+      user: userId,
+      username: username,
+      chips: 1000,
+      cards: [],
+      position: game.players.length,
+      currentBet: 0,
+      isBot: false,
+      folded: false,
+      isAllIn: false,
+      hasActed: false
+    });
+
+    await game.save();
+
+    // Отправляем обновление через Socket.IO
+    if (req.io) {
+      req.io.to(gameId).emit('gameUpdate', game);
+    }
+
+    res.json(game);
+  } catch (error) {
+    console.error('Ошибка при присоединении к игре:', error);
+    res.status(500).json({ message: 'Ошибка при присоединении к игре' });
   }
 };
 
@@ -213,7 +280,7 @@ exports.getGameType = async (req, res) => {
   try {
     const { gameId } = req.params;
     
-    const game = await PokerGame.findById(gameId);
+    const game = await PokerGame.findByPk(gameId);
     if (!game) {
       return res.status(404).json({ message: 'Игра не найдена' });
     }

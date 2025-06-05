@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,7 +69,8 @@ function PokerGame() {
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [betAmount, setBetAmount] = useState(20); // Размер ставки
   const [currentBet, setCurrentBet] = useState(0); // Текущая максимальная ставка в игре
-  const [isActionInProgress, setIsActionInProgress] = useState(false); // Блокировка множественных кликов
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
+  const [lastActionTime, setLastActionTime] = useState(0);
   
   // Состояния для анимации раздачи карт
   const [isDealing, setIsDealing] = useState(false);
@@ -89,12 +90,76 @@ function PokerGame() {
     height: 700
   };
 
+  // Состояния для управления игрой
+  const [showCards, setShowCards] = useState({});
+
+  // ДОБАВЛЕНО: Ref для таймера
+  const timerIntervalRef = useRef(null);
+
+  // Эффект для управления таймером хода
+  useEffect(() => {
+    // ИСПРАВЛЕНО: Полностью переписанная логика таймера
+    
+    // Очищаем предыдущий таймер
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    // Проверяем нужно ли запускать таймер
+    if (gameData && gameData.status === 'playing' && gameData.settings?.currentTurn !== undefined && !isActionInProgress) {
+      const currentPlayer = gameData.players[gameData.settings.currentTurn];
+      const isRealPlayerTurn = currentPlayer && 
+        currentPlayer.username === user?.username && 
+        !currentPlayer.folded && 
+        !currentPlayer.hasActed &&
+        !currentPlayer.isBot;
+      
+      // ИСПРАВЛЕНО: запускаем таймер ТОЛЬКО для реального игрока и только раз
+      if (isRealPlayerTurn && !timerIntervalRef.current) {
+        console.log(`[CLIENT] 🕐 Запускаем таймер для игрока ${currentPlayer.username} на 10 секунд`);
+        setTurnTimer(10); // Устанавливаем время
+        
+        timerIntervalRef.current = setInterval(() => {
+          setTurnTimer(prev => {
+            if (prev <= 1) {
+              console.log(`[CLIENT] ⏰ Время вышло для игрока ${currentPlayer.username}, автоматический fold`);
+              // Останавливаем таймер перед действием
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
+              handlePlayerAction('fold');
+              return 10;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else if (!isRealPlayerTurn && timerIntervalRef.current) {
+        // Если ход НЕ реального игрока - останавливаем таймер
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+        setTurnTimer(10);
+      }
+    } else if (timerIntervalRef.current) {
+      // Игра не активна или выполняется действие - останавливаем таймер
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+      setTurnTimer(10);
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [gameData?.settings?.currentTurn, gameData?.status, user?.username, isActionInProgress]); // УБРАЛИ turnTimer из зависимостей!
+
   // Обработка выхода из игры
   const handleExit = async () => {
     if (gameData && user) {
       try {
         await axios.post(`${API_URL}/api/poker/${gameId}/status`, {
-          userId: user._id,
+          userId: user.username,
           status: "finished"
         });
         navigate('/');
@@ -110,10 +175,42 @@ function PokerGame() {
   // Функция для запуска следующей игры
   const handleNextGame = async () => {
     try {
-      await axios.post(`${API_URL}/api/poker/${gameId}/next-game`);
-      setGameFinished(false);
+      console.log(`[CLIENT] ================ ЗАПРОС СЛЕДУЮЩЕЙ ИГРЫ ================`);
+      console.log(`[CLIENT] Текущая игра: ${gameId}, статус: ${gameData?.status}`);
+      
+      const response = await axios.post(`${API_URL}/api/poker/${gameId}/next-game`);
+      
+      console.log(`[CLIENT] ================ ОТВЕТ ПОЛУЧЕН ================`);
+      console.log(`[CLIENT] Success:`, response.data.success);
+      console.log(`[CLIENT] Новая игра ID:`, response.data.gameId);
+      
+      if (response.data.success && response.data.gameId) {
+        // Перенаправляем на новую игру
+        console.log(`[CLIENT] 🔄 Перенаправление на новую игру: ${response.data.gameId}`);
+        navigate(`/game/${response.data.gameId}`);
+      } else {
+        console.error('[CLIENT] ❌ Не удалось получить ID новой игры');
+        // ИСПРАВЛЕНО: Обработка случая когда игра не может продолжиться
+        if (response.data.canContinue === false) {
+          console.log('[CLIENT] 🏆 Игра завершена - недостаточно игроков для продолжения');
+          alert('Игра завершена! Недостаточно игроков с фишками для продолжения.');
+        }
+      }
+      
     } catch (error) {
-      console.error('Ошибка при запускі наступної гри:', error);
+      console.error('[CLIENT] Ошибка при запуске следующей игры:', error);
+      
+      // Обработка разных типов ошибок
+      if (error.response?.status === 400) {
+        const message = error.response.data?.message || 'Невозможно запустить следующую игру';
+        console.log(`[CLIENT] 🚫 ${message}`);
+        alert(message);
+      } else if (error.response?.status === 404) {
+        console.log('[CLIENT] 🚫 Эндпоинт не найден, прекращаем попытки');
+        alert('Ошибка: функция следующей игры недоступна');
+      } else {
+        alert('Произошла ошибка при запуске следующей игры');
+      }
     }
   };
 
@@ -149,13 +246,26 @@ function PokerGame() {
           setCurrentPlayerIndex(response.data.currentTurn);
           const currentPlayer = response.data.players[response.data.currentTurn];
           const newIsPlayerTurn = currentPlayer && 
-            currentPlayer.user && 
-            currentPlayer.user.toString() === user?._id && 
+            !currentPlayer.isBot && 
+            currentPlayer.username === user?.username && 
             !currentPlayer.folded;
           setIsPlayerTurn(newIsPlayerTurn);
           
           // Сбрасываем таймер при смене хода
           setTurnTimer(10);
+          
+          // Автоматически запускаем бота если сейчас его ход
+          if (currentPlayer && currentPlayer.isBot && !currentPlayer.folded && !currentPlayer.hasActed && response.data.status === 'playing') {
+            console.log(`[CLIENT] Запускаем первого бота ${currentPlayer.username}`);
+            setTimeout(async () => {
+              try {
+                await axios.post(`${API_URL}/api/poker/${gameId}/bot-action`);
+                console.log(`[CLIENT] Первый бот ${currentPlayer.username} запущен`);
+              } catch (error) {
+                console.error('[CLIENT] Ошибка при запуске первого бота:', error);
+              }
+            }, 2000); // Задержка 2 секунды при первой загрузке
+          }
         }
         
         // Запускаем анимацию раздачи карт для новой игры
@@ -180,30 +290,41 @@ function PokerGame() {
 
   // Автоматическое обновление игры для синхронизации с ходами ботов
   useEffect(() => {
-    let interval;
-    
-    if (gameData) {
-      interval = setInterval(async () => {
-        try {
-          const response = await axios.get(`${API_URL}/api/poker/${gameId}`);
+    if (!gameId || !user?.username) return;
+
+    const interval = setInterval(async () => {
+      try {
+        console.log(`[CLIENT] Автообновление: запрос к игре ${gameId}`);
+        const response = await axios.get(`${API_URL}/api/poker/${gameId}`);
+        
+        if (response.data && response.data.id) {
           const newGameData = response.data;
-          
-          console.log('[CLIENT] Автообновление: получены данные:', {
+          console.log(`[CLIENT] Автообновление: получены данные:`, {
             status: newGameData.status,
-            currentRound: newGameData.currentRound,
+            currentRound: newGameData.settings?.currentRound,
             pot: newGameData.pot,
-            currentTurn: newGameData.currentTurn,
-            communityCards: newGameData.communityCards?.length || 0
+            currentTurn: newGameData.settings?.currentTurn,
+            communityCards: newGameData.settings?.communityCards?.length || 0,
+            showdown: newGameData.showdown
           });
           
-          setGameData(newGameData);
+          // ИСПРАВЛЕНО: проверяем что новые данные корректные перед обновлением
+          if (newGameData.players && newGameData.players.length > 0 && newGameData.settings) {
+            setGameData(newGameData);
+          } else {
+            console.warn('[CLIENT] ⚠️ Неполные данные в автообновлении, пропускаем обновление');
+          }
           
-          // Проверяем статус игры
+          // ИСПРАВЛЕНО: Проверяем статус игры и останавливаем автообновление для завершённых игр
           if (newGameData.status === 'finished' || newGameData.status === 'eliminated') {
             if (!gameFinished) {
               console.log(`[CLIENT] Игра завершена со статусом: ${newGameData.status}`);
+              console.log(`[CLIENT] Showdown: ${newGameData.showdown}, Победитель: ${newGameData.winner}`);
               setGameFinished(true);
             }
+            console.log('[CLIENT] 🏁 Игра завершена - останавливаем автообновление');
+            clearInterval(interval);
+            return;
           } else if (newGameData.status === 'playing') {
             if (gameFinished) {
               console.log('[CLIENT] Игра перезапущена, переходим к новой игре');
@@ -226,8 +347,8 @@ function PokerGame() {
             setCurrentPlayerIndex(newGameData.currentTurn);
             const currentPlayer = newGameData.players[newGameData.currentTurn];
             const newIsPlayerTurn = currentPlayer && 
-              currentPlayer.user && 
-              currentPlayer.user.toString() === user?._id && 
+              !currentPlayer.isBot && 
+              currentPlayer.username === user?.username && 
               !currentPlayer.folded;
             setIsPlayerTurn(newIsPlayerTurn);
             
@@ -235,33 +356,99 @@ function PokerGame() {
             if (newIsPlayerTurn && gameData.currentTurn !== newGameData.currentTurn) {
               setTurnTimer(10);
             }
+            
+            // Автоматически запускаем бота если сейчас его ход
+            if (currentPlayer && currentPlayer.isBot && !currentPlayer.folded && !currentPlayer.hasActed && newGameData.status === 'playing') {
+              console.log(`[CLIENT] Запускаем бота ${currentPlayer.username}`);
+              setTimeout(async () => {
+                // ИСПРАВЛЕНО: Дополнительная проверка статуса игры перед запуском бота
+                const gameStatus = await axios.get(`${API_URL}/api/poker/${gameId}`);
+                if (gameStatus.data.status !== 'playing') {
+                  console.log(`[CLIENT] ⏹️ Игра завершена (${gameStatus.data.status}), бот не запускается`);
+                  return;
+                }
+                
+                await axios.post(`${API_URL}/api/poker/${gameId}/bot-action`);
+                console.log(`[CLIENT] Бот ${currentPlayer.username} запущен`);
+              }, 1000); // Задержка 1 секунда
+            }
           }
-        } catch (error) {
-          console.error('Ошибка при автообновленні:', error);
         }
-      }, 2000); // Интервал 2 секунды
-    }
+      } catch (error) {
+        console.error('Ошибка при автообновленні:', error);
+      }
+    }, 5000); // УВЕЛИЧЕНО: Интервал 5 секунд вместо 2
 
     return () => {
       if (interval) {
         clearInterval(interval);
       }
     };
-  }, [gameData?.status, gameId, user._id, gameFinished]);
+  }, [gameData?.status, gameId, user?.username, gameFinished]);
 
-  // Функция для обработки действий игрока
+  // Обработка действий игрока
   const handlePlayerAction = useCallback(async (action, amount = 0) => {
-    if (!isPlayerTurn) return;
+    console.log(`[CLIENT] ================ ОТПРАВКА ДЕЙСТВИЯ ================`);
     
-    // ДОБАВЛЕНО: защита от множественных кликов
-    if (isActionInProgress) return;
+    // УСИЛЕННАЯ ЗАЩИТА ОТ ДУБЛИРУЮЩИХ ЗАПРОСОВ
+    
+    // 1. Проверяем что игрок не сделал fold
+    if (gameData?.players) {
+      const currentPlayer = gameData.players.find(p => p.username === user?.username);
+      if (currentPlayer?.folded) {
+        console.warn('[CLIENT] ⚠️ Игрок сделал fold, действия заблокированы');
+        return;
+      }
+      
+      // Проверяем что это ход этого игрока
+      const activePlayer = gameData.players[gameData.settings?.currentTurn];
+      if (!activePlayer || activePlayer.username !== user?.username) {
+        console.warn('[CLIENT] ⚠️ Сейчас не ваш ход');
+        return;
+      }
+      
+      // Проверяем что игрок еще не сделал действие в этом раунде
+      if (activePlayer.hasActed) {
+        console.warn('[CLIENT] ⚠️ Игрок уже сделал действие в этом раунде');
+        return;
+      }
+    }
+    
+    // 2. Проверяем общую блокировку действий
+    if (isActionInProgress) {
+      console.warn('[CLIENT] ⚠️ Другое действие уже выполняется');
+      return;
+    }
+    
+    // 3. Более строгая временная защита - 2 секунды между действиями
+    const now = Date.now();
+    const timeSinceLastAction = now - lastActionTime;
+    
+    if (timeSinceLastAction < 2000) {
+      console.warn(`[CLIENT] ⚠️ Действие заблокировано: осталось ${Math.ceil((2000 - timeSinceLastAction) / 1000)} секунд`);
+      return;
+    }
+
+    console.log(`[CLIENT] Игра: ${gameId}, Действие: ${action}, Сумма: ${amount}`);
+    
+    // УСТАНАВЛИВАЕМ БЛОКИРОВКИ
     setIsActionInProgress(true);
-    
+    setLastActionTime(now);
+
     try {
       const response = await axios.post(`${API_URL}/api/poker/${gameId}/action`, {
-        userId: user._id,
+        userId: user?.username,
         action,
         amount
+      });
+      
+      console.log(`[CLIENT] ================ ОТВЕТ ПОЛУЧЕН ================`);
+      console.log(`[CLIENT] Статус ответа:`, response.status);
+      console.log(`[CLIENT] Полные данные ответа:`, response.data);
+      console.log(`[CLIENT] Новое состояние игры:`, {
+        pot: response.data.pot,
+        currentTurn: response.data.settings?.currentTurn,
+        status: response.data.status
       });
       
       // ДОБАВЛЕНО: проверяем перенаправление на новую игру
@@ -274,7 +461,7 @@ function PokerGame() {
         // Сразу делаем запрос к новой игре с тем же действием
         try {
           const newResponse = await axios.post(`${API_URL}/api/poker/${response.data.newGameId}/action`, {
-            userId: user._id,
+            userId: user?.username,
             action,
             amount
           });
@@ -290,8 +477,21 @@ function PokerGame() {
         return;
       }
       
-      // Обновляем данные игры
-      setGameData(response.data);
+      // ИСПРАВЛЕНО: проверяем что получили корректные данные
+      if (response.data && response.data.players && response.data.settings) {
+        setGameData(response.data);
+      } else {
+        console.warn('[CLIENT] ⚠️ Получена неполная структура ответа, запрашиваем данные заново');
+        // Немедленно делаем GET запрос для получения актуальных данных
+        try {
+          const freshData = await axios.get(`${API_URL}/api/poker/${gameId}`);
+          if (freshData.data && freshData.data.players && freshData.data.settings) {
+            setGameData(freshData.data);
+          }
+        } catch (freshError) {
+          console.error('[CLIENT] Ошибка при получении свежих данных:', freshError);
+        }
+      }
       
       // Обновляем текущую ставку
       if (response.data.players && response.data.players.length > 0) {
@@ -308,8 +508,8 @@ function PokerGame() {
         setCurrentPlayerIndex(response.data.currentTurn);
         const currentPlayer = response.data.players[response.data.currentTurn];
         const newIsPlayerTurn = currentPlayer && 
-          currentPlayer.user && 
-          currentPlayer.user.toString() === user?._id && 
+          !currentPlayer.isBot && 
+          currentPlayer.username === user?.username && 
           !currentPlayer.folded;
         setIsPlayerTurn(newIsPlayerTurn);
       }
@@ -317,61 +517,67 @@ function PokerGame() {
       // Сбрасываем таймер
       setTurnTimer(10);
       
+      console.log(`[CLIENT] ================ ДЕЙСТВИЕ ЗАВЕРШЕНО ================`);
       console.log(`Ігрок зробив ${action}`, response.data);
       
+      console.log(`[CLIENT] Действие "${action}" успешно выполнено`);
     } catch (error) {
-      console.error('Ошибка при виконанні дії:', error);
+      console.error('[CLIENT] ⚠️ ОШИБКА при выполнении действия:', error);
       
-      // Показываем сообщение об ошибке пользователю
-      if (error.response?.data?.message) {
-        console.warn('Сервер вернул ошибку:', error.response.data.message);
+      if (error.response?.status === 429) {
+        console.error('[CLIENT] Действие уже обрабатывается на сервере');
+      } else {
+        console.error('[CLIENT] Другая ошибка:', error.message);
       }
     } finally {
-      // ДОБАВЛЕНО: сбрасываем флаг блокировки через небольшую задержку
+      // Разблокируем через 1.5 секунды
       setTimeout(() => {
         setIsActionInProgress(false);
-      }, 1000);
+      }, 1500);
     }
-  }, [isPlayerTurn, gameId, user._id]);
+  }, [gameData, isActionInProgress, lastActionTime, gameId, user?.username]);
 
-  // Таймер для хода игрока
+  // Автообновление данных игры
   useEffect(() => {
-    let interval;
-    
-    // ИСПРАВЛЕНО: таймер работает для ВСЕХ игроков, не только для человека
-    if (gameData && gameData.status === 'playing' && gameData.currentTurn !== undefined) {
-      const currentPlayer = gameData.players[gameData.currentTurn];
-      const isCurrentPlayerTurn = currentPlayer && !currentPlayer.folded;
-      
-      if (isCurrentPlayerTurn) {
-        interval = setInterval(() => {
-          setTurnTimer(prev => {
-            if (prev <= 1) {
-              // Если это человек - автоматический fold
-              if (currentPlayer.user && currentPlayer.user.toString() === user?._id) {
-                handlePlayerAction('fold');
-              }
-              return 30; // Сброс таймера
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      }
-    }
+    if (!gameId) return;
 
-    return () => {
-      if (interval) {
+    const interval = setInterval(async () => {
+      // ДОБАВЛЕНО: проверяем что игра еще активна
+      if (gameData?.status === 'finished') {
+        console.log('[CLIENT] 🏁 Игра завершена - останавливаем автообновление');
         clearInterval(interval);
+        return;
       }
-    };
-  }, [gameData?.currentTurn, gameData?.status, user?._id]);
+
+      try {
+        const response = await axios.get(`${API_URL}/api/poker/${gameId}`);
+        
+        // ДОБАВЛЕНО: проверяем что получили валидные данные
+        if (response.data && response.data.id) {
+          setGameData(response.data);
+        } else {
+          console.warn('[CLIENT] ⚠️ Получены невалидные данные игры');
+        }
+      } catch (error) {
+        // ДОБАВЛЕНО: если игра не найдена, прекращаем обновления
+        if (error.response?.status === 404) {
+          console.warn('[CLIENT] 🚫 Игра не найдена - останавливаем автообновление');
+          clearInterval(interval);
+        } else {
+          console.error('Ошибка при автообновленії:', error);
+        }
+      }
+    }, 8000); // УВЕЛИЧЕНО: интервал 8 секунд для снижения нагрузки
+
+    return () => clearInterval(interval);
+  }, [gameId, gameData?.status]);
 
   // Функция присоединения к игре
   const handleJoinGame = async () => {
     try {
       const response = await axios.post(`${API_URL}/api/poker/${gameId}/join`, {
-        userId: user._id,
-        username: user.username
+        userId: user?.username,
+        username: user?.username
       });
       
       if (response.data) {
@@ -388,14 +594,21 @@ function PokerGame() {
     if (!gameData?.players) return {};
     
     const positions = {};
+    const dealerPosition = gameData.settings?.dealerPosition || 0;
+    const playersCount = gameData.players.length;
     
-    // Просто берем позиции из базы данных
+    // Рассчитываем позиции на основе дилера
     gameData.players.forEach((player, index) => {
+      const isDealer = index === dealerPosition;
+      const isSmallBlind = index === (dealerPosition + 1) % playersCount;
+      const isBigBlind = index === (dealerPosition + 2) % playersCount;
+      const isUTG = index === (dealerPosition + 3) % playersCount; // Under the gun
+      
       positions[index] = {
-        isDealer: player.isDealer || false,
-        isSmallBlind: player.isSmallBlind || false,
-        isBigBlind: player.isBigBlind || false,
-        isUTG: player.isUTG || false
+        isDealer,
+        isSmallBlind,
+        isBigBlind,
+        isUTG
       };
     });
     
@@ -404,18 +617,18 @@ function PokerGame() {
 
   // Функция для получения фиксированных позиций игроков на столе
   const getFixedPlayerPosition = (playerId) => {
-    if (!gameData?.players || !user?._id) return null;
+    if (!gameData?.players || !user?.username) return null;
     
     // Находим индекс реального игрока
     const realPlayerIndex = gameData.players.findIndex(p => 
-      p.user && p.user.toString() === user._id
+      p.username === user.username
     );
     
     if (realPlayerIndex === -1) return null;
     
     // Находим индекс текущего игрока
     const currentPlayerIndex = gameData.players.findIndex(p => 
-      p._id === playerId || p.user?.toString() === playerId
+      p._id === playerId || p.username === playerId
     );
     
     if (currentPlayerIndex === -1) return null;
@@ -436,10 +649,11 @@ function PokerGame() {
 
   // Получаем игроков для каждой фиксированной позиции
   const getPlayerAtPosition = (positionName) => {
-    if (!gameData?.players || !user?._id) return null;
+    if (!gameData?.players || !user?.username) return null;
     
+    // Ищем реального игрока по username вместо user._id
     const realPlayerIndex = gameData.players.findIndex(p => 
-      p.user && p.user.toString() === user._id
+      !p.isBot && p.username === user.username
     );
     
     if (realPlayerIndex === -1) return null;
@@ -507,6 +721,46 @@ function PokerGame() {
         }
       }, card.delay);
     });
+  };
+
+  // ИСПРАВЛЕНО: Возвращаем реальные карты игроков из сервера
+  const getCardsForPlayer = (player, isBot) => {
+    // Если карты есть в данных игрока, используем их
+    if (player.cards && player.cards.length > 0) {
+      // ИСПРАВЛЕНО: Убираем свойство hidden, чтобы карты не теряли прозрачность
+      // Логика показа обложки карт ботов обрабатывается в компоненте PokerPlayer
+      return player.cards.map(card => ({
+        suit: card.suit,
+        value: card.value
+        // Убрали hidden чтобы избежать проблем с прозрачностью
+      }));
+    }
+    
+    // Если карт нет - возвращаем пустой массив
+    return [];
+  };
+
+  // ВРЕМЕННОЕ ИСПРАВЛЕНИЕ: Добавляем фиктивные блайнды
+  const getCurrentBetForPlayer = (player, playerIndex) => {
+    // Если есть реальная ставка, используем её
+    if (player.currentBet && player.currentBet > 0) {
+      return player.currentBet;
+    }
+    
+    // ВРЕМЕННО: Устанавливаем блайнды на основе позиции
+    if (gameData && gameData.status === 'playing') {
+      const dealerPosition = gameData.settings?.dealerPosition || 0;
+      const smallBlindPosition = (dealerPosition + 1) % gameData.players.length;
+      const bigBlindPosition = (dealerPosition + 2) % gameData.players.length;
+      
+      if (playerIndex === smallBlindPosition) {
+        return 10; // Small blind
+      } else if (playerIndex === bigBlindPosition) {
+        return 20; // Big blind
+      }
+    }
+    
+    return 0;
   };
 
   // Показываем загрузку
@@ -619,20 +873,20 @@ function PokerGame() {
               </div>
                 </div>
               )}
-        {/* Игрок (реальный игрок) - снизу */}
+        {/* Игрок - снизу */}
         {(() => {
           const player = getPlayerAtPosition('player');
           if (!player) return null;
-          const playerIndex = gameData.players.findIndex(p => p._id === player._id || p.user?.toString() === player.user?.toString());
+          const playerIndex = player.position; // ИСПРАВЛЕНО: используем position вместо поиска по _id
           return (
-            <div className="absolute bottom-[15%] left-1/2 transform -translate-x-1/2">
+            <div className="absolute bottom-[10%] left-1/2 transform -translate-x-1/2">
                   <PokerPlayer 
                 player={{
                   ...player,
-                  username: user?.username || player.username || 'Player'
+                  currentBet: getCurrentBetForPlayer(player, playerIndex)
                 }}
-                isSelf={!player.isBot}
-                cards={!player.isBot ? player.cards || [] : []}
+                    isSelf={player.username === user?.username} 
+                cards={getCardsForPlayer(player, player.isBot)}
                 angle={0}
                 isDealer={playerPositions[playerIndex]?.isDealer || false}
                 isSmallBlind={playerPositions[playerIndex]?.isSmallBlind || false}
@@ -654,13 +908,16 @@ function PokerGame() {
         {(() => {
           const player = getPlayerAtPosition('leftBot');
           if (!player) return null;
-          const playerIndex = gameData.players.findIndex(p => p._id === player._id);
+          const playerIndex = player.position; // ИСПРАВЛЕНО: используем position вместо поиска по _id
           return (
             <div className="absolute left-[5%] top-1/2 transform -translate-y-1/2">
                   <PokerPlayer 
-                player={player}
+                player={{
+                  ...player,
+                  currentBet: getCurrentBetForPlayer(player, playerIndex)
+                }}
                     isSelf={false} 
-                cards={player.cards || []}
+                cards={getCardsForPlayer(player, player.isBot)}
                 angle={90}
                 isDealer={playerPositions[playerIndex]?.isDealer || false}
                 isSmallBlind={playerPositions[playerIndex]?.isSmallBlind || false}
@@ -682,13 +939,16 @@ function PokerGame() {
         {(() => {
           const player = getPlayerAtPosition('topBot');
           if (!player) return null;
-          const playerIndex = gameData.players.findIndex(p => p._id === player._id);
+          const playerIndex = player.position; // ИСПРАВЛЕНО: используем position вместо поиска по _id
           return (
             <div className="absolute top-[5%] left-1/2 transform -translate-x-1/2">
                   <PokerPlayer 
-                player={player}
+                player={{
+                  ...player,
+                  currentBet: getCurrentBetForPlayer(player, playerIndex)
+                }}
                     isSelf={false} 
-                cards={player.cards || []}
+                cards={getCardsForPlayer(player, player.isBot)}
                 angle={180}
                 isDealer={playerPositions[playerIndex]?.isDealer || false}
                 isSmallBlind={playerPositions[playerIndex]?.isSmallBlind || false}
@@ -710,13 +970,16 @@ function PokerGame() {
         {(() => {
           const player = getPlayerAtPosition('rightBot');
           if (!player) return null;
-          const playerIndex = gameData.players.findIndex(p => p._id === player._id);
+          const playerIndex = player.position; // ИСПРАВЛЕНО: используем position вместо поиска по _id
           return (
             <div className="absolute right-[5%] top-1/2 transform -translate-y-1/2">
                   <PokerPlayer 
-                player={player}
+                player={{
+                  ...player,
+                  currentBet: getCurrentBetForPlayer(player, playerIndex)
+                }}
                     isSelf={false} 
-                cards={player.cards || []}
+                cards={getCardsForPlayer(player, player.isBot)}
                 angle={270}
                 isDealer={playerPositions[playerIndex]?.isDealer || false}
                 isSmallBlind={playerPositions[playerIndex]?.isSmallBlind || false}
@@ -735,11 +998,11 @@ function PokerGame() {
         })()}
               
         {/* Общие карты */}
-        {gameData?.communityCards && gameData.communityCards.length > 0 && (
+        {gameData?.settings?.communityCards && gameData.settings.communityCards.length > 0 && (
           <div className="absolute top-[40%] left-1/2 transform -translate-x-1/2 flex gap-2">
-            {gameData.communityCards.map((card, index) => (
+            {gameData.settings.communityCards.map((card, index) => (
               <img
-                key={index}
+                key={`community-${card.suit}-${card.value}-${index}-${gameData.settings.currentRound}`}
                 src={getCardImage(card)}
                 alt={`${card.value}${card.suit}`}
                 className="w-16 h-24 rounded shadow-lg border border-gray-300 transition-all duration-300"
@@ -748,8 +1011,8 @@ function PokerGame() {
                 }}
               />
             ))}
-                </div>
-              )}
+          </div>
+        )}
               
         {/* Анимация раздачи карт */}
         {isDealing && dealingCards.length > 0 && (
@@ -844,15 +1107,16 @@ function PokerGame() {
           {/* Кнопки быстрых ставок в процентах */}
           <div className="grid grid-cols-4 gap-2">
             {[33, 50, 75, 100].map(percent => {
-              const currentPlayer = gameData.players[gameData.currentTurn];
-              const playerChips = currentPlayer.chips;
-              const maxPossibleBet = Math.min(currentPlayer.currentBet + playerChips, 1000); // Ограничиваем 1000
+              const currentPlayer = gameData.players[gameData.currentTurn] || {};
+              const ourPlayer = gameData.players.find(p => p.username === user?.username) || {}; // ДОБАВЛЕНО: находим нашего игрока
+              const playerChips = currentPlayer.chips || 1000;
+              const maxPossibleBet = Math.min((currentPlayer.currentBet || 0) + playerChips, 1000); // Ограничиваем 1000
               const potBet = Math.floor((percent / 100) * playerChips);
               const minRaise = currentBet + 20;
-              const maxPlayerBet = Math.min(Math.max(potBet + currentPlayer.currentBet, minRaise), maxPossibleBet);
-              const isDisabled = !isPlayerTurn || currentPlayer.folded || playerChips === 0 || maxPlayerBet < minRaise;
+              const maxPlayerBet = Math.min(Math.max(potBet + (currentPlayer.currentBet || 0), minRaise), maxPossibleBet);
+              const isDisabled = !isPlayerTurn || ourPlayer.folded || playerChips === 0 || maxPlayerBet < minRaise;
               return (
-                  <button 
+                <button 
                   key={percent}
                   onClick={() => !isDisabled && setBetAmount(maxPlayerBet)}
                   disabled={isDisabled}
@@ -863,87 +1127,87 @@ function PokerGame() {
                   }`}
                 >
                   {percent}%
-                  </button>
+                </button>
               );
             })}
-                </div>
+          </div>
 
           {/* Ползунок ставки без фона и текста */}
           <div className="flex items-center gap-3 min-w-80">
             <span className="text-white text-sm">{currentBet + 20}</span>
-                      <input 
-                        type="range" 
+            <input 
+              type="range" 
               min={currentBet + 20}
-              max={Math.min(gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips, 1000)}
+              max={Math.min((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000), 1000)}
               step="10"
-                        value={betAmount}
+              value={betAmount}
               onChange={(e) => setBetAmount(parseInt(e.target.value))}
-              disabled={!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips === 0}
+              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0}
               className={`flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider ${
-                (!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips === 0) ? 'opacity-50' : ''
+                                  (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0) ? 'opacity-50' : ''
               }`}
               style={{
-                background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-(currentBet+20))/(Math.min(gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips, 1000)-(currentBet+20)))*100}%, #374151 ${((betAmount-(currentBet+20))/(Math.min(gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips, 1000)-(currentBet+20)))*100}%, #374151 100%)`
+                background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-(currentBet+20))/(Math.min((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000), 1000)-(currentBet+20)))*100}%, #374151 ${((betAmount-(currentBet+20))/(Math.min((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000), 1000)-(currentBet+20)))*100}%, #374151 100%)`
               }}
             />
-            <span className="text-white text-sm">{Math.min(gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips, 1000)}</span>
-                      </div>
+            <span className="text-white text-sm">{Math.min((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000), 1000)}</span>
+          </div>
 
           {/* Кнопки действий */}
           <div className="flex gap-2">
-                      <button 
+            <button 
               onClick={() => handlePlayerAction('fold')}
-              disabled={!isPlayerTurn || gameData.players[gameData.currentTurn].folded || isActionInProgress}
+              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || isActionInProgress}
               className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
-                (!isPlayerTurn || gameData.players[gameData.currentTurn].folded || isActionInProgress)
+                (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || isActionInProgress)
                   ? 'bg-gray-800 opacity-50 cursor-not-allowed'
                   : 'bg-red-600 hover:bg-red-700 hover:scale-105'
               }`}
             >
               {isActionInProgress ? '...' : 'Fold'}
-                      </button>
+            </button>
 
             {/* Показываем Check только если текущая ставка игрока равна максимальной */}
-            {gameData.players[gameData.currentTurn].currentBet === currentBet ? (
-                      <button 
+            {(gameData.players[gameData.currentTurn]?.currentBet || 0) === currentBet ? (
+              <button 
                 onClick={() => handlePlayerAction('check')}
-                disabled={!isPlayerTurn || gameData.players[gameData.currentTurn].folded || isActionInProgress}
+                disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || isActionInProgress}
                 className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
-                  (!isPlayerTurn || gameData.players[gameData.currentTurn].folded || isActionInProgress)
+                  (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || isActionInProgress)
                     ? 'bg-gray-800 opacity-50 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
                 }`}
               >
                 {isActionInProgress ? '...' : 'Check'}
-                      </button>
-                ) : (
-            <button
+              </button>
+            ) : (
+              <button
                 onClick={() => handlePlayerAction('call')}
-                disabled={!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips < (currentBet - gameData.players[gameData.currentTurn].currentBet) || isActionInProgress}
+                disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) < (currentBet - (gameData.players[gameData.currentTurn]?.currentBet || 0)) || isActionInProgress}
                 className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
-                  (!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips < (currentBet - gameData.players[gameData.currentTurn].currentBet) || isActionInProgress)
+                  (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) < (currentBet - (gameData.players[gameData.currentTurn]?.currentBet || 0)) || isActionInProgress)
                     ? 'bg-gray-800 opacity-50 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 hover:scale-105'
                 }`}
               >
-                {isActionInProgress ? '...' : `Call ${currentBet - gameData.players[gameData.currentTurn].currentBet}`}
-            </button>
+                {isActionInProgress ? '...' : `Call ${currentBet - (gameData.players[gameData.currentTurn]?.currentBet || 0)}`}
+              </button>
             )}
 
             <button
-              onClick={() => handlePlayerAction('bet', Math.min(betAmount, gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips))}
-              disabled={!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips === 0 || isActionInProgress}
+              onClick={() => handlePlayerAction('bet', Math.min(betAmount, (gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000)))}
+              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress}
               className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
-                (!isPlayerTurn || gameData.players[gameData.currentTurn].folded || gameData.players[gameData.currentTurn].chips === 0 || isActionInProgress)
+                (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress)
                   ? 'bg-gray-800 opacity-50 cursor-not-allowed'
                   : 'bg-orange-600 hover:bg-orange-700 hover:scale-105'
               }`}
             >
-              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, gameData.players[gameData.currentTurn].currentBet + gameData.players[gameData.currentTurn].chips)}`}
+              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, (gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 1000))}`}
             </button>
-            </div>
-                  </div>
-        )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

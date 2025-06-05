@@ -12,19 +12,23 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      checkAuth();
+    } else {
+      setLoading(false);
     }
-    checkAuth();
   }, []);
 
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         const response = await axios.get(`${API_URL}/api/auth/me`);
+        console.log('Авторизація успішна:', response.data);
         setUser(response.data);
       }
     } catch (error) {
-      console.error('Auth check error:', error);
+      console.error('Помилка перевірки авторизації:', error);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
       setUser(null);
@@ -40,12 +44,15 @@ export const AuthProvider = ({ children }) => {
         password
       });
       const { token, user } = response.data;
+      
+      console.log('Логін успішний:', user);
+      
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       return user;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Помилка логіна:', error);
       throw error.response?.data || { message: 'Помилка сервера' };
     }
   };
@@ -58,12 +65,15 @@ export const AuthProvider = ({ children }) => {
         password
       });
       const { token, user } = response.data;
+      
+      console.log('Реєстрація успішна:', user);
+      
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(user);
       return user;
     } catch (error) {
-      console.error('Register error:', error);
+      console.error('Помилка реєстрації:', error);
       throw error.response?.data || { message: 'Помилка сервера' };
     }
   };
@@ -72,10 +82,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     setUser(null);
+    console.log('Вихід з системи');
+  };
+
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register, 
+      logout, 
+      loading, 
+      updateUser,
+      checkAuth 
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

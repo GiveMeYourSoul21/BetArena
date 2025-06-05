@@ -1,74 +1,120 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
 
-const pokerGameSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    default: 'poker',
-    required: true
-  },
-  players: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null
+module.exports = (sequelize) => {
+  const PokerGame = sequelize.define('PokerGame', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
-    username: String,
-    chips: { type: Number, default: 1000 },
-    cards: [{ 
-      suit: String, 
-      value: String, 
-      hidden: { type: Boolean, default: true } 
-    }],
-    isBot: { type: Boolean, default: false },
-    position: { type: Number, required: true },
-    currentBet: { type: Number, default: 0 },
-    isDealer: { type: Boolean, default: false },
-    isSmallBlind: { type: Boolean, default: false },
-    isBigBlind: { type: Boolean, default: false },
-    isUTG: { type: Boolean, default: false },
-    folded: { type: Boolean, default: false },
-    isAllIn: { type: Boolean, default: false },
-    hasActed: { type: Boolean, default: false }
-  }],
-  pot: { type: Number, default: 0 },
-  sidePots: [{
-    amount: Number,
-    eligiblePlayers: [Number]
-  }],
-  deck: [{ suit: String, value: String }],
-  communityCards: [{ suit: String, value: String }],
-  currentRound: {
-    type: String,
-    enum: ['preflop', 'flop', 'turn', 'river', 'showdown'],
-    default: 'preflop'
-  },
-  currentTurn: { type: Number, default: 0 },
+  type: {
+      type: DataTypes.STRING,
+      defaultValue: 'poker',
+      allowNull: false
+    },
+    players: {
+      type: DataTypes.JSON,
+      defaultValue: []
+    },
+    pot: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
+    },
+    deck: {
+      type: DataTypes.JSON,
+      defaultValue: []
+    },
   status: {
-    type: String,
-    enum: ['waiting', 'playing', 'finished', 'eliminated', 'replaced'],
-    default: 'waiting'
+      type: DataTypes.ENUM('waiting', 'playing', 'finished', 'eliminated', 'replaced'),
+      defaultValue: 'waiting'
   },
   settings: {
-    maxPlayers: { type: Number, default: 4 },
-    smallBlind: { type: Number, default: 10 },
-    bigBlind: { type: Number, default: 20 }
+      type: DataTypes.JSON,
+      defaultValue: {
+        maxPlayers: 4,
+        smallBlind: 10,
+        bigBlind: 20
+      }
   },
-  dealerPosition: { type: Number, default: 0 },
-  roundData: {
-    lastBet: { type: Number, default: 0 },
-    lastRaise: { type: Number, default: 0 },
-    betsEqualized: { type: Boolean, default: false }
-  },
-  winner: { type: String, default: null },
-  winningHand: { type: String, default: null },
-  winningCombination: { type: String, default: null },
-  showdown: { type: Boolean, default: false },
-  nextGameId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PokerGame',
-    default: null
-  },
-  createdAt: { type: Date, default: Date.now }
-}, { strict: false });
+    winner: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: null
+    },
+    showdown: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'user_id',
+      references: {
+        model: 'users',
+        key: 'id'
+      }
+    }
+  }, {
+    tableName: 'poker_games',
+    timestamps: false,
+    underscored: false,
+    hooks: {
+      // Hook для проверки уникальности карт перед сохранением
+      beforeSave: (game, options) => {
+        if (game.players && game.players.length > 0) {
+          const allCards = new Set();
+          const duplicates = [];
+          
+          // Проверяем карты игроков
+          for (let i = 0; i < game.players.length; i++) {
+            const player = game.players[i];
+            if (player.cards && Array.isArray(player.cards)) {
+              for (const card of player.cards) {
+                if (card && card.value && card.suit) {
+                  const cardKey = `${card.value}-${card.suit}`;
+                  if (allCards.has(cardKey)) {
+                    duplicates.push(`Игрок ${i} (${player.username}): ${cardKey}`);
+                  } else {
+                    allCards.add(cardKey);
+                  }
+                }
+              }
+            }
+          }
+          
+          // Проверяем общие карты
+          if (game.settings && game.settings.communityCards && Array.isArray(game.settings.communityCards)) {
+            for (const card of game.settings.communityCards) {
+              if (card && card.value && card.suit) {
+                const cardKey = `${card.value}-${card.suit}`;
+                if (allCards.has(cardKey)) {
+                  duplicates.push(`Общие карты: ${cardKey}`);
+                } else {
+                  allCards.add(cardKey);
+                }
+              }
+            }
+          }
+          
+          if (duplicates.length > 0) {
+            console.error(`[MODEL] ❌ КРИТИЧЕСКАЯ ОШИБКА: Дубликаты карт при сохранении игры ${game.id}:`, duplicates);
+            throw new Error(`Дубликаты карт обнаружены: ${duplicates.join(', ')}`);
+          } else {
+            console.log(`[MODEL] ✅ Проверка карт в модели прошла успешно. Всего карт: ${allCards.size}`);
+          }
+        }
+      }
+    }
+  });
 
-module.exports = mongoose.model('PokerGame', pokerGameSchema); 
+  // Связи с другими моделями
+  PokerGame.associate = function(models) {
+    // PokerGame принадлежит пользователю
+    PokerGame.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user'
+    });
+  };
+
+  return PokerGame;
+}; 
