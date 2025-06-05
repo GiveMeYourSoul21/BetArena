@@ -11,8 +11,7 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://127.0.0.1:3000',
-    'https://betarena-qgjfivg8y-skills-projects-fff77d72.vercel.app',
-    'https://bet-arena-front.vercel.app'
+    'https://betarena-qgjfivg8y-skills-projects-fff77d72.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
