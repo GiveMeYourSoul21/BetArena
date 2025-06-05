@@ -8,7 +8,12 @@ const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: [
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'https://betarena-qgjfivg8y-skills-projects-fff77d72.vercel.app',
+    'https://bet-arena-front.vercel.app'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
