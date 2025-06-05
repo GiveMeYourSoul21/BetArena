@@ -21,7 +21,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https://bet-arenaback.onrender.com https://*.vercel.app http://localhost:3002 ws://localhost:3002 wss://localhost:3002; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:;"
+          "value": "default-src 'self'; connect-src 'self' https://bet-arenaback.onrender.com https://bet2arena123.vercel.app https://*.vercel.app http://localhost:3002 ws://localhost:3002 wss://localhost:3002; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:;"
         }
       ]
     }
