@@ -5,8 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PokerPlayer from '../components/PokerPlayer';
 import { ToastContainer } from 'react-toastify';
 import { getCardImage } from '../utils/DeckUtils';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_URL } from '../config/api';
 
 // CSS стили для ползунка
 const sliderStyles = `

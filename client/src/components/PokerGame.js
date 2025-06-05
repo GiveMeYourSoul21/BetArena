@@ -8,8 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import defaultAvatar from '../assets/default_avatar.png';
 import smallChips from '../assets/small_ships.png';
 import '../styles/poker.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_URL } from '../config/api';
 
 function PokerGame() {
   const { gameId } = useParams();

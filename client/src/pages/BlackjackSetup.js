@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_URL } from '../config/api';
 
 function BlackjackSetup() {
   const navigate = useNavigate();

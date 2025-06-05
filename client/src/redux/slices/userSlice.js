@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_URL } from '../../config/api';
 
 // Получение начального количества фишек
 export const fetchInitialChips = createAsyncThunk(

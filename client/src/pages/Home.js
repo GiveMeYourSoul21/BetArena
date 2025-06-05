@@ -4,8 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import BlackjackSettings from '../components/BlackjackSettings';
 import axios from 'axios';
 import '../styles/Home.css';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3002';
+import { API_URL } from '../config/api';
 
 function Home() {
   const { user } = useAuth();

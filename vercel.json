@@ -25,9 +25,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "REACT_APP_API_URL": "https://bet-arenaback.onrender.com",
-    "GENERATE_SOURCEMAP": "false"
-  }
+  ]
 } 
