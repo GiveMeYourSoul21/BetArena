@@ -1046,7 +1046,7 @@ function PokerGame() {
                   }}
                 >
                   <img
-                    src="/cards/back.png"
+                    src="/cards/Back.png"
                     alt="Раздаваемая карта"
                     className="w-full h-full rounded shadow-lg border border-gray-300"
                     style={{

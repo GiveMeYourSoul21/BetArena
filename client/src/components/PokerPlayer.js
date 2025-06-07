@@ -160,7 +160,7 @@ const PokerPlayer = ({
                 return (
                   <img
                     key={i}
-                    src="/cards/back.png"
+                    src="/cards/Back.png"
                     alt="Обложка карты"
                     className={`w-16 h-22 rounded shadow-lg border border-gray-300 transition-all duration-300 absolute ${rotation} ${zIndex} ${offset}`}
                     style={{
