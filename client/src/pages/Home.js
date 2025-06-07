@@ -112,7 +112,7 @@ function Home() {
       <div 
         className="relative flex items-center justify-center w-full"
         style={{
-          backgroundImage: 'url(/bg/hero-bg.png)',
+          backgroundImage: 'url(/BG/hero-bg.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -160,7 +160,7 @@ function Home() {
             <div className="game-card card-flip">
               <div className="card-inner relative overflow-hidden rounded-lg">
                 <img 
-                  src="/bg/poker-bg.png" 
+                  src="/BG/poker-bg.png" 
                   alt="Poker" 
                   className="w-full h-[400px] object-cover"
                 />
@@ -181,7 +181,7 @@ function Home() {
             <div className="game-card card-flip">
               <div className="card-inner relative overflow-hidden rounded-lg">
                 <img 
-                  src="/bg/blackjack-bg.png" 
+                  src="/BG/blackjack-bg.png" 
                   alt="Blackjack" 
                   className="w-full h-[400px] object-cover"
                 />
@@ -206,7 +206,7 @@ function Home() {
         ref={el => sectionsRef.current[1] = el}
         className="section relative py-20"
         style={{
-          backgroundImage: 'url(/bg/how-to-play-bg.png)',
+          backgroundImage: 'url(/BG/how-to-play-bg.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}

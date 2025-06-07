@@ -23,6 +23,10 @@
       "destination": "/BG/$1"
     },
     {
+      "source": "/bg/(.*)",
+      "destination": "/BG/$1"
+    },
+    {
       "source": "/favicon.ico",
       "destination": "/favicon.ico"
     },
