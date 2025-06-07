@@ -11,6 +11,30 @@
   ],
   "rewrites": [
     {
+      "source": "/static/(.*)",
+      "destination": "/static/$1"
+    },
+    {
+      "source": "/cards/(.*)",
+      "destination": "/cards/$1"
+    },
+    {
+      "source": "/BG/(.*)",
+      "destination": "/BG/$1"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/logo192.png",
+      "destination": "/logo192.png"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
