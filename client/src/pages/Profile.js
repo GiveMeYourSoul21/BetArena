@@ -5,7 +5,7 @@ import defaultAvatar from '../assets/default_avatar.png';
 import { API_URL } from '../config/api';
 
 function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [bonusLoading, setBonusLoading] = useState(false);
   const [bonusError, setBonusError] = useState('');
@@ -15,10 +15,16 @@ function Profile() {
   const [chips, setChips] = useState(user?.chips);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editUsername, setEditUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState(user?.username || '');
+  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSuccess, setUsernameSuccess] = useState('');
 
   useEffect(() => {
     setLastBonus(user?.lastBonus);
     setChips(user?.chips);
+    setNewUsername(user?.username || '');
   }, [user]);
 
   useEffect(() => {
@@ -94,6 +100,35 @@ function Profile() {
     }
   };
 
+  const handleUsernameSave = async () => {
+    setUsernameLoading(true);
+    setUsernameError('');
+    setUsernameSuccess('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ username: newUsername })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUsernameError(data.message || 'Помилка зміни імені');
+      } else {
+        setUsernameSuccess('Імʼя успішно змінено!');
+        updateUser(data);
+        setEditUsername(false);
+      }
+    } catch (e) {
+      setUsernameError('Помилка сервера');
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
   // Перевіряємо, чи доступний бонус
   let bonusAvailable = true;
   if (lastBonus) {
@@ -125,7 +160,38 @@ function Profile() {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400">Ім'я користувача</label>
-            <p className="text-xl">{user.username}</p>
+            {!editUsername ? (
+              <div className="flex items-center gap-2">
+                <p className="text-xl">{user.username}</p>
+                <button
+                  className="ml-2 text-blue-400 hover:text-blue-600 underline text-sm"
+                  onClick={() => { setEditUsername(true); setUsernameError(''); setUsernameSuccess(''); }}
+                >Змінити</button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="rounded px-2 py-1 text-black"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  disabled={usernameLoading}
+                  maxLength={24}
+                />
+                <button
+                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                  onClick={handleUsernameSave}
+                  disabled={usernameLoading || !newUsername.trim() || newUsername === user.username}
+                >Зберегти</button>
+                <button
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded"
+                  onClick={() => { setEditUsername(false); setNewUsername(user.username); setUsernameError(''); setUsernameSuccess(''); }}
+                  disabled={usernameLoading}
+                >Скасувати</button>
+              </div>
+            )}
+            {usernameError && <div className="text-red-400 text-sm mt-1">{usernameError}</div>}
+            {usernameSuccess && <div className="text-green-400 text-sm mt-1">{usernameSuccess}</div>}
           </div>
 
           <div>
