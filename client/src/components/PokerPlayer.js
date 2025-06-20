@@ -102,7 +102,7 @@ const PokerPlayer = ({
                   alt={`${card.value}${card.suit}`}
                   className={`w-16 h-22 rounded shadow-lg border transition-all duration-300 cursor-pointer absolute ${rotation} ${zIndex} ${offset} ${
                     isWinning
-                      ? 'border-2 border-yellow-400 animate-pulse shadow-xl' 
+                      ? 'border-2 border-yellow-400 shadow-xl' 
                       : 'border border-gray-300'
                   }`}
                   style={{
@@ -137,7 +137,7 @@ const PokerPlayer = ({
                     alt={`${card.value}${card.suit}`}
                     className={`w-16 h-22 rounded shadow-lg border transition-all duration-300 absolute ${rotation} ${zIndex} ${offset} ${
                       isWinning
-                        ? 'border-2 border-yellow-400 animate-pulse shadow-xl' 
+                        ? 'border-2 border-yellow-400 shadow-xl' 
                         : 'border border-gray-300'
                     }`}
                     style={{
@@ -199,7 +199,7 @@ const PokerPlayer = ({
             <div className={`text-sm font-semibold text-center mb-1 ${
               isSelf ? 'text-orange-400' : 'text-white'
             }`}>
-              {isWinner && gameStatus === 'finished' ? '👑 ' : ''}{displayName}{hasFolded ? ' (FOLD)' : ''}{isWinner && gameStatus === 'finished' ? ' 👑' : ''}
+              {isWinner && gameStatus === 'finished' ? '👑' : ''}{displayName}{hasFolded ? ' (FOLD)' : ''}{isWinner && gameStatus === 'finished' ? ' 👑' : ''}
             </div>
             
             {/* Серая полоска-разделитель */}

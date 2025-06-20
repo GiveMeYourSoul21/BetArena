@@ -162,7 +162,7 @@ function Profile() {
             <label className="block text-sm font-medium text-gray-400">Ім'я користувача</label>
             {!editUsername ? (
               <div className="flex items-center gap-2">
-                <p className="text-xl">{user.username}</p>
+            <p className="text-xl">{user.username}</p>
                 <button
                   className="ml-2 text-blue-400 hover:text-blue-600 underline text-sm"
                   onClick={() => { setEditUsername(true); setUsernameError(''); setUsernameSuccess(''); }}
