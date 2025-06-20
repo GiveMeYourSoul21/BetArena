@@ -107,7 +107,7 @@ const PokerPlayer = ({
                   }`}
                   style={{
                     filter: isWinning
-                      ? 'brightness(1) drop-shadow(0 0 8px rgba(255, 215, 0, 0.7))'
+                      ? 'brightness(0.8) drop-shadow(0 0 8px rgba(255, 215, 0, 0.7))'
                       : 'none',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                   }}

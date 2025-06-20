@@ -270,24 +270,19 @@ router.post('/bonus', auth, async (req, res) => {
     const now = new Date();
     const lastBonus = user.lastBonus;
     
-    // Перевіряємо, чи пройшло 24 години з останнього бонусу
+    // Перевіряємо, чи пройшло 24 години
     if (lastBonus) {
       const timeDiff = now - lastBonus;
-      const hoursDiff = timeDiff / (1000 * 60 * 60);
-      
-      if (hoursDiff < 24) {
-        const hoursLeft = Math.ceil(24 - hoursDiff);
-        return res.status(400).json({ 
-          message: `Наступний бонус буде доступний через ${hoursLeft} годин` 
-        });
+      // 24 години в мілісекундах: 24 * 60 * 60 * 1000
+      if (timeDiff < 24 * 60 * 60 * 1000) {
+        return res.status(400).json({ message: 'Ви вже отримали щоденний бонус. Спробуйте пізніше.', msLeft: 24 * 60 * 60 * 1000 - timeDiff });
       }
     }
-    
-    // Додаємо бонус
-    const bonusAmount = 100;
+
+    // Нараховуємо бонус
+    const bonusAmount = 1000;
     user.chips += bonusAmount;
     user.lastBonus = now;
-    
     await user.save();
     
     res.status(200).json({
