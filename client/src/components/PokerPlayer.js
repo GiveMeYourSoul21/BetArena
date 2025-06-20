@@ -106,12 +106,10 @@ const PokerPlayer = ({
                       : 'border border-gray-300'
                   }`}
                   style={{
-                    boxShadow: isWinning
-                      ? '0 4px 12px rgba(255, 215, 0, 0.6)' 
-                      : '0 2px 4px rgba(0, 0, 0, 0.2)',
                     filter: isWinning
-                      ? 'brightness(1.2) saturate(1.2)' 
-                      : 'none'
+                      ? 'brightness(1.1) drop-shadow(0 0 8px rgba(255, 215, 0, 0.7))'
+                      : 'none',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                   }}
                 />
               );
@@ -141,12 +139,10 @@ const PokerPlayer = ({
                         : 'border border-gray-300'
                     }`}
                     style={{
-                      boxShadow: isWinning
-                        ? '0 4px 12px rgba(255, 215, 0, 0.6)' 
-                        : '0 2px 4px rgba(0, 0, 0, 0.2)',
                       filter: isWinning
-                        ? 'brightness(1.2) saturate(1.2)' 
-                        : 'none'
+                        ? 'brightness(1.1) drop-shadow(0 0 8px rgba(255, 215, 0, 0.7))'
+                        : 'none',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                     }}
                   />
                 );
