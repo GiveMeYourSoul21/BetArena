@@ -92,66 +92,45 @@ function PokerGame() {
   // Состояния для управления игрой
   const [showCards, setShowCards] = useState({});
 
-  // ДОБАВЛЕНО: Ref для таймера
+  // Ref для таймера, чтобы он не сбрасывался при ререндерах
   const timerIntervalRef = useRef(null);
 
   // Эффект для управления таймером хода
   useEffect(() => {
-    // ИСПРАВЛЕНО: Полностью переписанная логика таймера
-    
-    // Очищаем предыдущий таймер
+    // Очищаем предыдущий таймер, если он был
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
     }
 
-    // Проверяем нужно ли запускать таймер
-    if (gameData && gameData.status === 'playing' && gameData.settings?.currentTurn !== undefined && !isActionInProgress) {
-      const currentPlayer = gameData.players[gameData.settings.currentTurn];
-      const isRealPlayerTurn = currentPlayer && 
-        currentPlayer.username === user?.username && 
-        !currentPlayer.folded && 
-        !currentPlayer.hasActed &&
-        !currentPlayer.isBot;
+    if (gameData && gameData.status === 'playing' && gameData.currentTurn !== undefined && !isActionInProgress) {
+      const currentPlayer = gameData.players[gameData.currentTurn];
+      const isMyTurn = currentPlayer && currentPlayer.username === user?.username && !currentPlayer.folded;
       
-      // ИСПРАВЛЕНО: запускаем таймер ТОЛЬКО для реального игрока и только раз
-      if (isRealPlayerTurn && !timerIntervalRef.current) {
+      if (isMyTurn) {
         console.log(`[CLIENT] 🕐 Запускаем таймер для игрока ${currentPlayer.username} на 10 секунд`);
-        setTurnTimer(10); // Устанавливаем время
+        setTurnTimer(10); // Сбрасываем таймер на 10
         
         timerIntervalRef.current = setInterval(() => {
           setTurnTimer(prev => {
             if (prev <= 1) {
-              console.log(`[CLIENT] ⏰ Время вышло для игрока ${currentPlayer.username}, автоматический fold`);
-              // Останавливаем таймер перед действием
               clearInterval(timerIntervalRef.current);
-              timerIntervalRef.current = null;
+              console.log(`[CLIENT] ⏰ Время вышло для игрока ${currentPlayer.username}, автоматический fold`);
               handlePlayerAction('fold');
-              return 10;
+              return 0; // Возвращаем 0, когда время вышло
             }
             return prev - 1;
           });
         }, 1000);
-      } else if (!isRealPlayerTurn && timerIntervalRef.current) {
-        // Если ход НЕ реального игрока - останавливаем таймер
-        clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
-        setTurnTimer(10);
       }
-    } else if (timerIntervalRef.current) {
-      // Игра не активна или выполняется действие - останавливаем таймер
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-      setTurnTimer(10);
     }
 
     return () => {
+      // Очищаем таймер при размонтировании компонента или изменении зависимостей
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
       }
     };
-  }, [gameData?.settings?.currentTurn, gameData?.status, user?.username, isActionInProgress]); // УБРАЛИ turnTimer из зависимостей!
+  }, [gameData?.currentTurn, gameData?.status, user?.username, isActionInProgress]); // Зависимости для перезапуска таймера
 
   // Обработка выхода из игры
   const handleExit = async () => {
@@ -285,7 +264,12 @@ function PokerGame() {
     if (gameId && user) {
       fetchGameData();
     }
-  }, [gameId, user]);
+
+    // Настраиваем автообновление
+    const interval = setInterval(fetchGameData, 5000); // ИЗМЕНЕНО: интервал увеличен до 5 секунд
+
+    return () => clearInterval(interval);
+  }, [gameId, user, navigate, sessionId]);
 
   // Автоматическое обновление игры для синхронизации с ходами ботов
   useEffect(() => {
