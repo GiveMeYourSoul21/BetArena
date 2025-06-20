@@ -92,45 +92,66 @@ function PokerGame() {
   // Состояния для управления игрой
   const [showCards, setShowCards] = useState({});
 
-  //  для таймера, чтобы он не сбрасывался при ререндерах
+  // ДОБАВЛЕНО: Ref для таймера
   const timerIntervalRef = useRef(null);
 
   // Эффект для управления таймером хода
   useEffect(() => {
-    // Очищаем предыдущий таймер, если он был
+    // ИСПРАВЛЕНО: Полностью переписанная логика таймера
+    
+    // Очищаем предыдущий таймер
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
     }
 
-    if (gameData && gameData.status === 'playing' && gameData.currentTurn !== undefined && !isActionInProgress) {
-      const currentPlayer = gameData.players[gameData.currentTurn];
-      const isMyTurn = currentPlayer && currentPlayer.username === user?.username && !currentPlayer.folded;
+    // Проверяем нужно ли запускать таймер
+    if (gameData && gameData.status === 'playing' && gameData.settings?.currentTurn !== undefined && !isActionInProgress) {
+      const currentPlayer = gameData.players[gameData.settings.currentTurn];
+      const isRealPlayerTurn = currentPlayer && 
+        currentPlayer.username === user?.username && 
+        !currentPlayer.folded && 
+        !currentPlayer.hasActed &&
+        !currentPlayer.isBot;
       
-      if (isMyTurn) {
+      // ИСПРАВЛЕНО: запускаем таймер ТОЛЬКО для реального игрока и только раз
+      if (isRealPlayerTurn && !timerIntervalRef.current) {
         console.log(`[CLIENT] 🕐 Запускаем таймер для игрока ${currentPlayer.username} на 10 секунд`);
-        setTurnTimer(10); // Сбрасываем таймер на 10
+        setTurnTimer(10); // Устанавливаем время
         
         timerIntervalRef.current = setInterval(() => {
           setTurnTimer(prev => {
             if (prev <= 1) {
-              clearInterval(timerIntervalRef.current);
               console.log(`[CLIENT] ⏰ Время вышло для игрока ${currentPlayer.username}, автоматический fold`);
+              // Останавливаем таймер перед действием
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
               handlePlayerAction('fold');
-              return 0; // Возвращаем 0, когда время вышло
+              return 10;
             }
             return prev - 1;
           });
         }, 1000);
+      } else if (!isRealPlayerTurn && timerIntervalRef.current) {
+        // Если ход НЕ реального игрока - останавливаем таймер
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+        setTurnTimer(10);
       }
+    } else if (timerIntervalRef.current) {
+      // Игра не активна или выполняется действие - останавливаем таймер
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+      setTurnTimer(10);
     }
 
     return () => {
-      // Очищаем таймер при размонтировании компонента или изменении зависимостей
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
       }
     };
-  }, [gameData?.currentTurn, gameData?.status, user?.username, isActionInProgress]); // Зависимости для перезапуска таймера
+  }, [gameData?.settings?.currentTurn, gameData?.status, user?.username, isActionInProgress]); // УБРАЛИ turnTimer из зависимостей!
 
   // Обработка выхода из игры
   const handleExit = async () => {
@@ -264,12 +285,7 @@ function PokerGame() {
     if (gameId && user) {
       fetchGameData();
     }
-
-    // Настраиваем автообновление
-    const interval = setInterval(fetchGameData, 5000); // ИЗМЕНЕНО: интервал увеличен до 5 секунд
-
-    return () => clearInterval(interval);
-  }, [gameId, user, navigate, sessionId]);
+  }, [gameId, user]);
 
   // Автоматическое обновление игры для синхронизации с ходами ботов
   useEffect(() => {
@@ -360,7 +376,7 @@ function PokerGame() {
       } catch (error) {
         console.error('Ошибка при автообновленні:', error);
       }
-    }, 12000); // УВЕЛИЧЕНО: Интервал 12 секунд вместо 2
+    }, 5000); // УВЕЛИЧЕНО: Интервал 5 секунд вместо 2
 
     return () => {
       if (interval) {
