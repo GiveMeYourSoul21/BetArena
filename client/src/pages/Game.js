@@ -92,7 +92,7 @@ function PokerGame() {
   // Состояния для управления игрой
   const [showCards, setShowCards] = useState({});
 
-  // Ref для таймера, чтобы он не сбрасывался при ререндерах
+  //  для таймера, чтобы он не сбрасывался при ререндерах
   const timerIntervalRef = useRef(null);
 
   // Эффект для управления таймером хода
@@ -360,7 +360,7 @@ function PokerGame() {
       } catch (error) {
         console.error('Ошибка при автообновленні:', error);
       }
-    }, 5000); // УВЕЛИЧЕНО: Интервал 5 секунд вместо 2
+    }, 12000); // УВЕЛИЧЕНО: Интервал 12 секунд вместо 2
 
     return () => {
       if (interval) {
