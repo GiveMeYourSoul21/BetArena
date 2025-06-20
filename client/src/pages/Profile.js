@@ -66,10 +66,6 @@ function Profile() {
         setBonusSuccess(data.message);
         setChips(data.chips);
         setLastBonus(data.lastBonus);
-        updateUser({ ...user, chips: data.chips, lastBonus: data.lastBonus });
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
       }
     } catch (e) {
       setBonusError('Помилка сервера');
@@ -213,9 +209,7 @@ function Profile() {
             <p className="text-xl">
               {user.lastBonus
                 ? new Date(user.lastBonus).toLocaleDateString('uk-UA')
-                : user.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString('uk-UA')
-                  : 'Дата невідома'
+                : 'Дата невідома'
               }
             </p>
           </div>
