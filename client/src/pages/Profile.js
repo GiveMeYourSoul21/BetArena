@@ -207,8 +207,8 @@ function Profile() {
           <div>
             <label className="block text-sm font-medium text-gray-400">Учасник з</label>
             <p className="text-xl">
-              {user.lastBonus
-                ? new Date(user.lastBonus).toLocaleDateString('uk-UA')
+              {user.createdAt
+                ? new Date(user.createdAt).toLocaleDateString('uk-UA')
                 : 'Дата невідома'
               }
             </p>
