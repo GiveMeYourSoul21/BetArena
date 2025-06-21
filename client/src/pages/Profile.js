@@ -66,10 +66,10 @@ function Profile() {
         setBonusSuccess(data.message);
         setChips(data.chips);
         setLastBonus(data.lastBonus);
-        // Обновляем страницу через 1 секунду после получения бонуса
+        // Обновляем страницу через 0.3 секунду после получения бонуса
         setTimeout(() => {
           window.location.reload();
-        }, 1000);
+        }, 300);
       }
     } catch (e) {
       setBonusError('Помилка сервера');
@@ -168,7 +168,7 @@ function Profile() {
               <div className="flex items-center gap-2">
             <p className="text-xl">{user.username}</p>
                 <button
-                  className="ml-2 text-gray-400 hover:text-gray-600 underline text-sm"
+                  className="ml-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
                   onClick={() => { setEditUsername(true); setUsernameError(''); setUsernameSuccess(''); }}
                 >Змінити</button>
               </div>
