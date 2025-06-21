@@ -82,7 +82,7 @@ module.exports = (sequelize) => {
             }
           }
           
-          // Проверяем общие карты
+          // Проверяем общие карты6666
           if (game.settings && game.settings.communityCards && Array.isArray(game.settings.communityCards)) {
             for (const card of game.settings.communityCards) {
               if (card && card.value && card.suit) {
