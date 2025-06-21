@@ -986,9 +986,20 @@ function PokerGame() {
                 key={`community-${card.suit}-${card.value}-${index}-${gameData.settings.currentRound}`}
                 src={getCardImage(card)}
                 alt={`${card.value}${card.suit}`}
-                className="w-16 h-24 rounded shadow-lg border border-gray-300 transition-all duration-300"
+                className="w-16 h-24 rounded shadow-lg border border-gray-300 transition-all duration-300 cursor-pointer hover:scale-110 hover:z-50"
                 style={{
-                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+                  transition: 'all 0.3s ease-in-out'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.4)';
+                  e.target.style.transform = 'scale(1.15)';
+                  e.target.style.zIndex = '100';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                  e.target.style.transform = 'scale(1)';
+                  e.target.style.zIndex = 'auto';
                 }}
               />
             ))}
