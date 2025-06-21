@@ -179,7 +179,7 @@ function Profile() {
                   maxLength={24}
                 />
                 <button
-                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded"
                   onClick={handleUsernameSave}
                   disabled={usernameLoading || !newUsername.trim() || newUsername === user.username}
                 >Зберегти</button>
@@ -200,7 +200,7 @@ function Profile() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400">Фішки</label>
+            <label className="block text-sm font-medium text-gray-400">Chips</label>
             <p className="text-xl">{chips}</p>
           </div>
 
