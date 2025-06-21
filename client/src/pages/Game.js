@@ -818,9 +818,7 @@ function PokerGame() {
         {gameData && (
         <div className="absolute top-4 left-4 z-50">
           <div className="bg-black bg-opacity-70 rounded-lg p-3 text-white text-sm">
-            <div className="font-bold">💰 Банк: {gameData.pot || 0}</div>
             <div>🎯 Раунд: {gameData.currentRound || 'preflop'}</div>
-            <div>📊 Статус: {gameData.status === 'finished' ? 'завершено' : gameData.status === 'playing' ? 'грає' : 'очікує'}</div>
             
             {/* Информация о победителе */}
             {gameFinished && gameData.winner && (
@@ -831,22 +829,6 @@ function PokerGame() {
                 )}
               </div>
             )}
-            
-            {gameData.settings && (
-              <div className="text-xs mt-1">
-                SB: {gameData.settings.smallBlind} / BB: {gameData.settings.bigBlind}
-                </div>
-              )}
-            {/* Отладочная информация */}
-            <div className="text-xs mt-2 text-yellow-300">
-              Дилер: {gameData.dealerPosition !== undefined ? gameData.dealerPosition : 'не визначено'}
-            </div>
-            <div className="text-xs text-green-300">
-              Поточний хід: {gameData.currentTurn !== undefined ? gameData.currentTurn : 'не визначено'}
-            </div>
-            <div className="text-xs text-blue-300">
-              Мій хід: {isPlayerTurn ? 'ТАК' : 'НІ'}
-            </div>
 
             </div>
           </div>
