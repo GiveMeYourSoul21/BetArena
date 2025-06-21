@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import defaultAvatar from '../assets/default_avatar.png';
+import defaultAvatar from '../assets/avatar.png';
 import { API_URL } from '../config/api';
 
 function Profile() {
@@ -232,7 +232,6 @@ function Profile() {
 
           {/* Блок удаления аккаунта */}
           <div className="mt-8 pt-6 border-t border-gray-600">
-            <h3 className="text-lg font-semibold text-red-400 mb-3">Небезпечна зона</h3>
             {!showDeleteConfirm ? (
               <button
                 className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
