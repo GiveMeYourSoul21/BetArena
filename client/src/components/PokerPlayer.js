@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import defaultAvatar from '../assets/default_avatar.png';
 import userAvatar from '../assets/avatar.png';
 import smallChips from '../assets/small_ships.png';
@@ -27,6 +27,30 @@ const PokerPlayer = ({
   const displayChips = Math.max(0, player?.chips || chips || 0);
   const currentBet = player?.currentBet || 0;
   const hasFolded = player?.folded || false;
+
+  // Состояние для отображения последнего действия
+  const [showAction, setShowAction] = useState(false);
+  const [currentAction, setCurrentAction] = useState(null);
+
+  // Эффект для отображения последнего действия игрока
+  useEffect(() => {
+    if (player?.lastAction && player.lastAction.timestamp) {
+      const timeSinceAction = Date.now() - player.lastAction.timestamp;
+      
+      // Показываем действие только если оно произошло недавно (в течение 3 секунд)
+      if (timeSinceAction < 3000) {
+        setCurrentAction(player.lastAction);
+        setShowAction(true);
+        
+        // Скрываем через 1.5 секунды
+        const timer = setTimeout(() => {
+          setShowAction(false);
+        }, 1500);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [player?.lastAction]);
 
   // Выбираем правильный аватар
   const avatarSrc = isSelf ? userAvatar : defaultAvatar;
@@ -74,6 +98,60 @@ const PokerPlayer = ({
     return winningCards.some(winCard => 
       winCard.suit === card.suit && 
       (winCard.value === card.value || winCard.original === card.value)
+    );
+  };
+
+  // Функция для получения позиции статуса действия
+  const getActionBadgePosition = () => {
+    switch (angle) {
+      case 0: // Снизу (игрок)
+        return { bottom: '45px', left: '50%', transform: 'translateX(-50%)' };
+      case 90: // Слева (Bot 1)
+        return { top: '50%', right: '-80px', transform: 'translateY(-50%)' };
+      case 180: // Сверху (Bot 2)
+        return { top: '45px', left: '50%', transform: 'translateX(-50%)' };
+      case 270: // Справа (Bot 3)
+        return { top: '50%', left: '-80px', transform: 'translateY(-50%)' };
+      default:
+        return { bottom: '45px', left: '50%', transform: 'translateX(-50%)' };
+    }
+  };
+
+  // Компонент для отображения статуса действия
+  const ActionBadge = ({ action, amount }) => {
+    if (!action) return null;
+
+    const getActionColor = (actionType) => {
+      switch (actionType) {
+        case 'check': return 'bg-yellow-500 text-black';
+        case 'fold': return 'bg-red-500 text-white';
+        case 'call': return 'bg-blue-500 text-white';
+        case 'bet':
+        case 'raise': return 'bg-blue-600 text-white';
+        case 'all-in': return 'bg-purple-600 text-white';
+        default: return 'bg-gray-500 text-white';
+      }
+    };
+
+    const getActionText = (actionType, actionAmount) => {
+      switch (actionType) {
+        case 'check': return 'Check';
+        case 'fold': return 'Fold';
+        case 'call': return `Call ${actionAmount || ''}`;
+        case 'bet': return `Bet ${actionAmount || ''}`;
+        case 'raise': return `Raise ${actionAmount || ''}`;
+        case 'all-in': return `All-In ${actionAmount || ''}`;
+        default: return actionType;
+      }
+    };
+
+    return (
+      <div
+        className={`absolute z-50 px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-white animate-pulse ${getActionColor(action)}`}
+        style={getActionBadgePosition()}
+      >
+        {getActionText(action, amount)}
+      </div>
     );
   };
   
@@ -283,8 +361,16 @@ const PokerPlayer = ({
                 {isSmallBlind ? '10' : '20'} 
               </div>
             </div>
-        </div>
-      )}
+          </div>
+        )}
+
+        {/* Статус последнего действия игрока */}
+        {showAction && currentAction && (
+          <ActionBadge 
+            action={currentAction.action} 
+            amount={currentAction.amount} 
+          />
+        )}
       </div>
     </div>
   );

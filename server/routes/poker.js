@@ -161,7 +161,8 @@ router.post('/create', async (req, res) => {
         isUTG: player.isUTG,
         folded: false,
         isAllIn: false,
-        hasActed: false
+        hasActed: false,
+        lastAction: null
       })),
       pot: 30,
       deck: createDeck(),
@@ -547,6 +548,7 @@ router.post('/:gameId/action', async (req, res) => {
       case 'fold':
         player.folded = true;
         player.hasActed = true;
+        player.lastAction = { action: 'fold', timestamp: Date.now() };
         console.log(`Игрок ${player.username} сбросил карты`);
         break;
         
@@ -556,7 +558,8 @@ router.post('/:gameId/action', async (req, res) => {
           player.chips -= callAmount;
           player.currentBet += callAmount;
           game.pot += callAmount;
-        player.hasActed = true;
+          player.hasActed = true;
+          player.lastAction = { action: 'call', amount: callAmount, timestamp: Date.now() };
           console.log(`Игрок ${player.username} уравнял ставку: ${callAmount}`);
         } else {
           return res.status(400).json({ message: 'Недостаточно фишек для колла' });
@@ -565,7 +568,8 @@ router.post('/:gameId/action', async (req, res) => {
         
       case 'check':
         if (player.currentBet === currentBet) {
-      player.hasActed = true;
+          player.hasActed = true;
+          player.lastAction = { action: 'check', timestamp: Date.now() };
           console.log(`Игрок ${player.username} чекнул`);
         } else {
           return res.status(400).json({ message: 'Нельзя чекнуть, есть ставка для уравнения' });
@@ -574,19 +578,34 @@ router.post('/:gameId/action', async (req, res) => {
         
       case 'bet':
       case 'raise':
-      const betAmount = parseInt(amount);
+        const betAmount = parseInt(amount);
         const minRaise = currentBet + 20; // Минимальный рейз = текущая ставка + размер большого блайнда
+        const totalBetNeeded = betAmount - player.currentBet;
         
-        if (betAmount < minRaise) {
-          return res.status(400).json({ message: `Минимальная ставка: ${minRaise}` });
+        // ИСПРАВЛЕНО: проверяем All-In ситуацию
+        const playerMaxBet = player.currentBet + player.chips; // Максимальная ставка игрока
+        const isAllIn = betAmount >= playerMaxBet;
+        
+        // Если игрок идет All-In, разрешаем ставку даже если она меньше minRaise
+        if (!isAllIn && betAmount < minRaise) {
+          return res.status(400).json({ message: `Минимальная ставка: ${minRaise}. Или поставьте все фишки (All-In: ${playerMaxBet})` });
         }
         
-        const totalBetNeeded = betAmount - player.currentBet;
+        // Проверяем что у игрока достаточно фишек
         if (player.chips >= totalBetNeeded) {
           player.chips -= totalBetNeeded;
           game.pot += totalBetNeeded;
           player.currentBet = betAmount;
-        player.hasActed = true;
+          player.hasActed = true;
+          
+          // Отмечаем All-In если игрок поставил все фишки
+          if (player.chips === 0) {
+            player.isAllIn = true;
+            player.lastAction = { action: 'all-in', amount: betAmount, timestamp: Date.now() };
+            console.log(`Игрок ${player.username} идет All-In: ${betAmount}`);
+          } else {
+            player.lastAction = { action: currentBet > 0 ? 'raise' : 'bet', amount: betAmount, timestamp: Date.now() };
+          }
         
           // ИСПРАВЛЕНО: сбрасываем hasActed только у НЕ сфолженных игроков при рейзе
           game.players.forEach((p, idx) => {
@@ -596,7 +615,7 @@ router.post('/:gameId/action', async (req, res) => {
           });
       
           console.log(`Игрок ${player.username} поставил: ${betAmount}`);
-          } else {
+        } else {
           return res.status(400).json({ message: 'Недостаточно фишек для ставки' });
         }
         break;
@@ -1057,7 +1076,8 @@ async function startNextGame(game) {
       isUTG: index === ((newDealerPosition + 3) % game.players.length),
       folded: false,
       isAllIn: false,
-      hasActed: false
+      hasActed: false,
+      lastAction: null
     }));
     
     const sbPosition = (newDealerPosition + 1) % game.players.length;
@@ -1248,6 +1268,7 @@ async function processBotAction(gameId) {
       case 'fold':
         botPlayer.folded = true;
         botPlayer.hasActed = true;
+        botPlayer.lastAction = { action: 'fold', timestamp: Date.now() };
         console.log(`[BOT-ACTION] Применил fold: folded=${botPlayer.folded}, hasActed=${botPlayer.hasActed}`);
         break;
       
@@ -1258,6 +1279,7 @@ async function processBotAction(gameId) {
           botPlayer.currentBet += callAmount;
           game.pot += callAmount;
           botPlayer.hasActed = true;
+          botPlayer.lastAction = { action: 'call', amount: callAmount, timestamp: Date.now() };
           console.log(`[BOT-ACTION] Применил call: chips=${botPlayer.chips}, bet=${botPlayer.currentBet}, hasActed=${botPlayer.hasActed}`);
         }
         break;
@@ -1272,6 +1294,14 @@ async function processBotAction(gameId) {
           botPlayer.currentBet = betAmount;
           botPlayer.hasActed = true;
           
+          // Отмечаем All-In если бот поставил все фишки
+          if (botPlayer.chips === 0) {
+            botPlayer.isAllIn = true;
+            botPlayer.lastAction = { action: 'all-in', amount: betAmount, timestamp: Date.now() };
+          } else {
+            botPlayer.lastAction = { action: currentBet > 0 ? 'raise' : 'bet', amount: betAmount, timestamp: Date.now() };
+          }
+          
           // ИСПРАВЛЕНО: сбрасываем hasActed только у НЕ сфолженных игроков при рейзе
           game.players.forEach((p, idx) => {
             if (idx !== currentPlayerIndex && !p.folded) {
@@ -1285,6 +1315,7 @@ async function processBotAction(gameId) {
       case 'check':
         if (botPlayer.currentBet === currentBet) {
           botPlayer.hasActed = true;
+          botPlayer.lastAction = { action: 'check', timestamp: Date.now() };
           console.log(`[BOT-ACTION] Применил check: hasActed=${botPlayer.hasActed}`);
         }
         break;
@@ -1517,12 +1548,13 @@ async function advanceToNextRound(game) {
     return;
   }
 
-  // ИСПРАВЛЕНИЕ: Сбрасываем hasActed у всех активных игроков для нового раунда
-  console.log(`[ROUND] 🔄 СБРОС hasActed для нового раунда`);
+  // ИСПРАВЛЕНИЕ: Сбрасываем hasActed и lastAction у всех активных игроков для нового раунда
+  console.log(`[ROUND] 🔄 СБРОС hasActed и lastAction для нового раунда`);
   game.players.forEach((player, index) => {
     if (!player.folded) {
-      console.log(`[ROUND] Сбрасываем hasActed для игрока ${index}: ${player.username}`);
+      console.log(`[ROUND] Сбрасываем hasActed и lastAction для игрока ${index}: ${player.username}`);
       player.hasActed = false;
+      player.lastAction = null; // Очищаем последнее действие
     }
   });
 

@@ -1102,15 +1102,21 @@ function PokerGame() {
               const currentPlayer = gameData.players[gameData.currentTurn] || {};
               const ourPlayer = gameData.players.find(p => p.username === user?.username) || {}; // ДОБАВЛЕНО: находим нашего игрока
               const playerChips = currentPlayer.chips || 0;
-              const maxPossibleBet = playerChips; // Только фишки игрока
+              const playerCurrentBet = currentPlayer.currentBet || 0;
+              
+              // ИСПРАВЛЕНО: рассчитываем правильную ставку
               const potBet = Math.floor((percent / 100) * playerChips);
+              const totalBetAmount = playerCurrentBet + potBet; // Общая ставка игрока
               const minRaise = currentBet + 20;
-              const maxPlayerBet = Math.min(Math.max(potBet, minRaise), maxPossibleBet);
-              const isDisabled = !isPlayerTurn || ourPlayer.folded || playerChips === 0 || maxPlayerBet < minRaise;
+              
+              // Для 100% всегда ставим все фишки (All-In)
+              const finalBetAmount = percent === 100 ? playerCurrentBet + playerChips : Math.max(totalBetAmount, minRaise);
+              
+              const isDisabled = !isPlayerTurn || ourPlayer.folded || playerChips === 0;
               return (
                 <button 
                   key={percent}
-                  onClick={() => !isDisabled && setBetAmount(maxPlayerBet)}
+                  onClick={() => !isDisabled && setBetAmount(finalBetAmount)}
                   disabled={isDisabled}
                   className={`text-white text-xs font-bold py-2 px-3 rounded-lg transition-all ${
                     isDisabled 
@@ -1126,23 +1132,35 @@ function PokerGame() {
 
           {/* Ползунок ставки без фона и текста */}
           <div className="flex items-center gap-3 min-w-80">
-            <span className="text-white text-sm">{currentBet + 20}</span>
-            <input 
-              type="range" 
-              min={currentBet + 20}
-              max={gameData.players[gameData.currentTurn]?.chips || 0}
-              step="10"
-              value={betAmount}
-              onChange={(e) => setBetAmount(parseInt(e.target.value))}
-              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0}
-              className={`flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider ${
-                                  (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0) ? 'opacity-50' : ''
-              }`}
-              style={{
-                background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 100%)`
-              }}
-            />
-            <span className="text-white text-sm">{gameData.players[gameData.currentTurn]?.chips || 0}</span>
+            {(() => {
+              const currentPlayer = gameData.players[gameData.currentTurn] || {};
+              const playerChips = currentPlayer.chips || 0;
+              const playerCurrentBet = currentPlayer.currentBet || 0;
+              const minRaise = currentBet + 20;
+              const maxTotalBet = playerCurrentBet + playerChips; // Максимальная общая ставка (All-In)
+              
+              return (
+                <>
+                  <span className="text-white text-sm">{minRaise}</span>
+                  <input 
+                    type="range" 
+                    min={minRaise}
+                    max={maxTotalBet}
+                    step="10"
+                    value={betAmount}
+                    onChange={(e) => setBetAmount(parseInt(e.target.value))}
+                    disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || playerChips === 0}
+                    className={`flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider ${
+                      (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || playerChips === 0) ? 'opacity-50' : ''
+                    }`}
+                    style={{
+                      background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-minRaise)/(maxTotalBet-minRaise))*100}%, #374151 ${((betAmount-minRaise)/(maxTotalBet-minRaise))*100}%, #374151 100%)`
+                    }}
+                  />
+                  <span className="text-white text-sm">{maxTotalBet}</span>
+                </>
+              );
+            })()}
           </div>
 
           {/* Кнопки действий */}
@@ -1187,7 +1205,12 @@ function PokerGame() {
             )}
 
             <button
-              onClick={() => handlePlayerAction('bet', Math.min(betAmount, gameData.players[gameData.currentTurn]?.chips || 0))}
+              onClick={() => {
+                const currentPlayer = gameData.players[gameData.currentTurn] || {};
+                const actualBetAmount = Math.min(betAmount, currentPlayer.chips || 0);
+                const totalBetAmount = currentPlayer.currentBet + actualBetAmount;
+                handlePlayerAction('bet', totalBetAmount);
+              }}
               disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress}
               className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
                 (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress)
