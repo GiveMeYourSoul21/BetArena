@@ -258,36 +258,7 @@ router.post('/create', async (req, res) => {
   }
 });
 
-async function ensureMinimumChips(game) {
-  try {
-    // Убеждаемся что у всех есть минимальные фишки
-    let gameChanged = false;
-    
-    game.players.forEach(player => {
-      if (player.chips < 10) {
-        player.chips = 1000;
-        gameChanged = true;
-        console.log(`Пополнили фишки игрока ${player.username} до 1000`);
-      }
-    });
-    
-    if (gameChanged) {
-      // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно помечаем JSON поля как измененные для Sequelize
-
-      game.changed('players', true);
-
-      game.changed('pot', true);
-
-      game.changed('settings', true);
-
-      
-
-      await game.save();
-    }
-  } catch (error) {
-    console.error('Ошибка при пополнении фишек:', error);
-  }
-}
+// ВИДАЛЕНО: функція ensureMinimumChips - більше не поповнюємо фішки автоматично
 
 /**
  * @route   GET /api/poker/:gameId
@@ -403,6 +374,12 @@ router.get('/:gameId', async (req, res) => {
     gameData.currentTurn = game.settings.currentTurn;
     gameData.currentRound = game.settings.currentRound;
     gameData.dealerPosition = game.settings.dealerPosition;
+    
+    // ДОДАНО: логування lastAction для всіх гравців
+    console.log(`[GET] 📤 Відправляємо дані гри ${gameId}:`);
+    game.players.forEach((player, idx) => {
+      console.log(`[GET] Гравець ${idx} (${player.username}): lastAction=`, player.lastAction);
+    });
     
     res.status(200).json(gameData);
   } catch (error) {
@@ -549,7 +526,7 @@ router.post('/:gameId/action', async (req, res) => {
         player.folded = true;
         player.hasActed = true;
         player.lastAction = { action: 'fold', timestamp: Date.now() };
-        console.log(`Игрок ${player.username} сбросил карты`);
+        console.log(`[ACTION] ✅ ${player.username} сбросил карты, lastAction установлен:`, player.lastAction);
         break;
         
       case 'call':
@@ -560,7 +537,7 @@ router.post('/:gameId/action', async (req, res) => {
           game.pot += callAmount;
           player.hasActed = true;
           player.lastAction = { action: 'call', amount: callAmount, timestamp: Date.now() };
-          console.log(`Игрок ${player.username} уравнял ставку: ${callAmount}`);
+          console.log(`[ACTION] ✅ ${player.username} уравнял ставку: ${callAmount}, lastAction установлен:`, player.lastAction);
         } else {
           return res.status(400).json({ message: 'Недостаточно фишек для колла' });
         }
@@ -570,7 +547,7 @@ router.post('/:gameId/action', async (req, res) => {
         if (player.currentBet === currentBet) {
           player.hasActed = true;
           player.lastAction = { action: 'check', timestamp: Date.now() };
-          console.log(`Игрок ${player.username} чекнул`);
+          console.log(`[ACTION] ✅ ${player.username} чекнул, lastAction установлен:`, player.lastAction);
         } else {
           return res.status(400).json({ message: 'Нельзя чекнуть, есть ставка для уравнения' });
         }
@@ -714,17 +691,13 @@ router.post('/:gameId/action', async (req, res) => {
       game.settings.currentTurn = nextPlayerIndex;
     }
     
-    // Сохраняем игру используя Sequelize
-    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно помечаем JSON поля как измененные для Sequelize
-
+    // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Явно помечаем JSON поля как измененные для Sequelize СРАЗУ после изменения
+    console.log(`[ACTION] 🔄 Помечаем поля как измененные и сохраняем игру`);
     game.changed('players', true);
-
     game.changed('pot', true);
-
     game.changed('settings', true);
-
     
-
+    // Сохраняем игру используя Sequelize
     await game.save();
     
     // ДОБАВЛЕНО: детальное логирование сохранения игры
@@ -1269,7 +1242,7 @@ async function processBotAction(gameId) {
         botPlayer.folded = true;
         botPlayer.hasActed = true;
         botPlayer.lastAction = { action: 'fold', timestamp: Date.now() };
-        console.log(`[BOT-ACTION] Применил fold: folded=${botPlayer.folded}, hasActed=${botPlayer.hasActed}`);
+        console.log(`[BOT-ACTION] ✅ ${botPlayer.username} Применил fold, lastAction установлен:`, botPlayer.lastAction);
         break;
       
       case 'call':
@@ -1280,7 +1253,7 @@ async function processBotAction(gameId) {
           game.pot += callAmount;
           botPlayer.hasActed = true;
           botPlayer.lastAction = { action: 'call', amount: callAmount, timestamp: Date.now() };
-          console.log(`[BOT-ACTION] Применил call: chips=${botPlayer.chips}, bet=${botPlayer.currentBet}, hasActed=${botPlayer.hasActed}`);
+          console.log(`[BOT-ACTION] ✅ ${botPlayer.username} Применил call, lastAction установлен:`, botPlayer.lastAction);
         }
         break;
       
@@ -1316,7 +1289,7 @@ async function processBotAction(gameId) {
         if (botPlayer.currentBet === currentBet) {
           botPlayer.hasActed = true;
           botPlayer.lastAction = { action: 'check', timestamp: Date.now() };
-          console.log(`[BOT-ACTION] Применил check: hasActed=${botPlayer.hasActed}`);
+          console.log(`[BOT-ACTION] ✅ ${botPlayer.username} Применил check, lastAction установлен:`, botPlayer.lastAction);
         }
         break;
     }
