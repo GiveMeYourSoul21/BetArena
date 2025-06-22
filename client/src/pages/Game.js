@@ -369,7 +369,7 @@ function PokerGame() {
                 
                 await axios.post(`${API_URL}/api/poker/${gameId}/bot-action`);
                 console.log(`[CLIENT] Бот ${currentPlayer.username} запущен`);
-              }, 1000); // Задержка 1 секунда
+              }, 2000); // УВЕЛИЧЕНО: Задержка 2 секунды
             }
           }
         }

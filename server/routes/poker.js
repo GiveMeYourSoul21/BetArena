@@ -1437,13 +1437,13 @@ async function processBotAction(gameId) {
     
     console.log(`[BOT-ACTION] ⏭️ Ход переходит к игроку ${nextPlayerIndex}: ${freshGame.players[nextPlayerIndex].username}`);
 
-    // ИСПРАВЛЕНО: запускаем следующего бота если он есть
+    // ИСПРАВЛЕНО: запускаем следующего бота если он есть с увеличенной задержкой
     if (freshGame.players[nextPlayerIndex].isBot && !freshGame.players[nextPlayerIndex].folded && !freshGame.players[nextPlayerIndex].hasActed) {
-      console.log(`[BOT-ACTION] 🤖 Следующий игрок тоже бот, запускаем его через 1 секунду`);
+      console.log(`[BOT-ACTION] 🤖 Следующий игрок тоже бот, запускаем его через 3 секунды`);
       setTimeout(async () => {
         processingGames.delete(gameId.toString());
         await processBotAction(gameId);
-      }, 1000);
+      }, 3000); // УВЕЛИЧЕНО с 1000 до 3000 мс
     } else {
       console.log(`[BOT-ACTION] ⏹️ Следующий игрок не бот или уже действовал, остановка обработки`);
       processingGames.delete(gameId.toString());

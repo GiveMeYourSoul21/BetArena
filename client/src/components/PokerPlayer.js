@@ -112,16 +112,16 @@ const PokerPlayer = ({
   // Функция для получения позиции статуса действия
   const getActionBadgePosition = () => {
     switch (angle) {
-      case 0: // Снизу (игрок)
-        return { bottom: '45px', left: '50%', transform: 'translateX(-50%)' };
-      case 90: // Слева (Bot 1)
-        return { top: '50%', right: '-80px', transform: 'translateY(-50%)' };
-      case 180: // Сверху (Bot 2)
-        return { top: '45px', left: '50%', transform: 'translateX(-50%)' };
-      case 270: // Справа (Bot 3)
-        return { top: '50%', left: '-80px', transform: 'translateY(-50%)' };
+      case 0: // Снизу (игрок) - под картами
+        return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
+      case 90: // Слева (Bot 1) - под картами
+        return { top: '50%', right: '-60px', transform: 'translateY(-50%)' };
+      case 180: // Сверху (Bot 2) - под картами  
+        return { top: '85px', left: '50%', transform: 'translateX(-50%)' };
+      case 270: // Справа (Bot 3) - под картами
+        return { top: '50%', left: '-60px', transform: 'translateY(-50%)' };
       default:
-        return { bottom: '45px', left: '50%', transform: 'translateX(-50%)' };
+        return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
     }
   };
 
@@ -141,24 +141,24 @@ const PokerPlayer = ({
       }
     };
 
-    const getActionText = (actionType, actionAmount) => {
+    const getActionText = (actionType) => {
       switch (actionType) {
         case 'check': return 'Check';
         case 'fold': return 'Fold';
-        case 'call': return `Call ${actionAmount || ''}`;
-        case 'bet': return `Bet ${actionAmount || ''}`;
-        case 'raise': return `Raise ${actionAmount || ''}`;
-        case 'all-in': return `All-In ${actionAmount || ''}`;
+        case 'call': return 'Call';
+        case 'bet': return 'Bet';
+        case 'raise': return 'Raise';
+        case 'all-in': return 'All-In';
         default: return actionType;
       }
     };
 
     return (
       <div
-        className={`absolute z-50 px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-white animate-pulse ${getActionColor(action)}`}
+        className={`absolute z-50 px-3 py-1 rounded-full text-sm font-bold shadow-lg border-2 border-white ${getActionColor(action)}`}
         style={getActionBadgePosition()}
       >
-        {getActionText(action, amount)}
+        {getActionText(action)}
       </div>
     );
   };
