@@ -28,17 +28,17 @@ const PokerPlayer = ({
   const currentBet = player?.currentBet || 0;
   const hasFolded = player?.folded || false;
 
-  // Выбираем правильный аватар
+  // Вибираємо правильний аватар
   const avatarSrc = isSelf ? userAvatar : defaultAvatar;
   
-  // Стили для аватара с учетом fold
+  // Стилі для аватара з урахуванням fold
   const avatarStyle = `w-28 h-28 rounded-full overflow-hidden border-3 shadow-lg transition-all duration-300
     ${hasFolded ? 'opacity-30 grayscale border-gray-600' : 
       player?.isBot ? 'border-gray-500' : 'border-blue-400'}
     ${isSelf && !hasFolded ? 'border-yellow-400 shadow-yellow-500/30' : ''}
     ${isCurrentTurn && !hasFolded ? 'border-4 border-green-400 shadow-green-500/80 animate-pulse ring-4 ring-green-300' : ''}`;
 
-  // Функция для получения позиции и цвета
+  // Функція для отримання позиції та кольору
   const getPositionInfo = () => {
     if (isDealer) return { text: 'D', bgColor: 'bg-yellow-500', borderColor: 'border-yellow-300' };
     if (isSmallBlind) return { text: 'SB', bgColor: 'bg-blue-500', borderColor: 'border-blue-300' };
@@ -49,14 +49,14 @@ const PokerPlayer = ({
 
   const positionInfo = getPositionInfo();
   
-  // Функция для расчета позиции ставки относительно игрока
+  // Функція для розрахунку позиції ставки відносно гравця
   const getBetPosition = () => {
     switch (angle) {
-      case 0: // Снизу (игрок)
+      case 0: // Знизу (гравець)
         return { transform: 'translate(-50%, -130px)' };
-      case 90: // Слева (Bot 1)
+      case 90: // Зліва (Bot 1)
         return { transform: 'translate(110px, 0%)' };
-      case 180: // Сверху (Bot 2)
+      case 180: // Зверху (Bot 2)
         return { transform: 'translate(-50%, 110px)' };
       case 270: // Справа (Bot 3)
         return { transform: 'translate(-130px, 0%)' };
@@ -65,7 +65,7 @@ const PokerPlayer = ({
     }
   };
   
-  // Функция для проверки, является ли карта частью выигрышной комбинации
+  // Функція для перевірки, чи є карта частиною переможної комбінації
   const isWinningCard = (card) => {
     if (!winningCards || winningCards.length === 0 || gameStatus !== 'finished' || !isWinner) {
       return false;
@@ -87,7 +87,7 @@ const PokerPlayer = ({
           className={avatarStyle} 
         />
 
-        {/* Карты для реального игрока - НА аватаре под углом */}
+        {/* Карти для реального гравця - НА аватарі під кутом */}
         {!player?.isBot && cards && cards.length > 0 && !hasFolded && (
           <div className="absolute inset-0 flex items-center justify-center">
             {cards.map((card, i) => {
@@ -117,12 +117,12 @@ const PokerPlayer = ({
           </div>
         )}
 
-        {/* Карты для ботов - ВСЕГДА показываем обложки, открываем только при шоудауне */}
+        {/* Карти для ботів - ЗАВЖДИ показуємо обкладинки, відкриваємо тільки при шоудауні */}
         {player?.isBot && !hasFolded && dealtCardsCount > 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            {/* Показываем либо настоящие карты при шоудауне, либо обложки */}
+            {/* Показуємо або справжні карти при шоудауні, або обкладинки */}
             {(gameStatus === 'finished' && showdown && cards && cards.length > 0) ? (
-              // Показываем настоящие карты при шоудауне
+              // Показуємо справжні карти при шоудауні
               cards.map((card, i) => {
                 const isWinning = isWinningCard(card);
                 const rotation = i === 0 ? '-rotate-12' : 'rotate-12';
@@ -148,7 +148,7 @@ const PokerPlayer = ({
                 );
               })
             ) : (
-              // Показываем обложки карт - только столько, сколько уже роздано
+              // Показуємо обкладинки карт - тільки стільки, скільки вже роздано
               Array.from({ length: Math.min(dealtCardsCount, 2) }, (_, i) => {
                 const rotation = i === 0 ? '-rotate-12' : 'rotate-12';
                 const zIndex = i === 0 ? 'z-10' : 'z-20';
@@ -157,7 +157,7 @@ const PokerPlayer = ({
                   <img
                     key={i}
                     src="/cards/Back.png"
-                    alt="Обложка карты"
+                    alt="Обкладинка карти"
                     className={`w-16 h-22 rounded shadow-lg border border-gray-300 transition-all duration-300 absolute ${rotation} ${zIndex} ${offset}`}
                     style={{
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
@@ -169,7 +169,7 @@ const PokerPlayer = ({
           </div>
         )}
         
-        {/* Маркер позиции */}
+        {/* Маркер позиції */}
         {positionInfo && (
           <div className={`absolute -top-2 -right-2 ${positionInfo.bgColor} text-white text-xs font-bold rounded-full flex items-center justify-center border-2 ${positionInfo.borderColor} shadow-lg ${
             positionInfo.text === 'UTG' ? 'w-8 h-6 px-1' : 'w-6 h-6'
@@ -178,7 +178,7 @@ const PokerPlayer = ({
           </div>
         )}
 
-        {/* Расширенный блок имени и банка игрока - налегающий на нижнюю часть аватара */}
+        {/* Розширений блок імені та банку гравця - налягаючий на нижню частину аватара */}
         <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 transition-all duration-300 ${hasFolded ? 'opacity-50' : ''} z-30`}>
           <div
             className={`bg-black text-white shadow-lg transition-all duration-300 ${
@@ -191,17 +191,17 @@ const PokerPlayer = ({
               padding: '8px 14px'
             }}
           >
-            {/* Имя игрока */}
+            {/* Ім'я гравця */}
             <div className={`text-sm font-semibold text-center mb-1 ${
               isSelf ? 'text-orange-400' : 'text-white'
             }`}>
               {isWinner && gameStatus === 'finished' ? '👑' : ''}{displayName}{hasFolded ? ' (FOLD)' : ''}{isWinner && gameStatus === 'finished' ? ' 👑' : ''}
             </div>
             
-            {/* Серая полоска-разделитель */}
+            {/* Сіра смужка-розділювач */}
             <div className="h-px bg-gray-500 mx-1 mb-1"></div>
             
-            {/* Банк игрока */}
+            {/* Банк гравця */}
             <div className={`text-sm font-bold text-center ${
               displayChips === 0 
                 ? 'text-red-400' 
@@ -212,7 +212,7 @@ const PokerPlayer = ({
               {displayChips.toLocaleString()}
             </div>
 
-            {/* Таймер-полоска прямо под балансом - внутри панели - ТОЛЬКО для игроков, НЕ ботов */}
+            {/* Таймер-смужка прямо під балансом - всередині панелі - ТІЛЬКИ для гравців, НЕ ботів */}
             {isCurrentTurn && !hasFolded && !player?.isBot && (
               <div className="w-full mt-2">
                 <div className={`h-2 bg-black rounded-full overflow-hidden border border-white shadow-lg`} style={{
@@ -238,7 +238,7 @@ const PokerPlayer = ({
           </div>
         </div>
 
-        {/* Ставка игрока (блайнды и др.) - ЗДЕСЬ МОЖНО ИЗМЕНИТЬ ПОЗИЦИЮ */}
+        {/* Ставка гравця (блайнди та ін.) - ТУТМОЖНА ЗМІНИТИ ПОЗИЦІЮ */}
         {currentBet > 0 && (
           <div
             className="absolute z-50"
@@ -249,13 +249,13 @@ const PokerPlayer = ({
             }}
           >
             <div className="flex flex-col items-center animate-fadeIn">
-              {/* Картинка фишек */}
+              {/* Картинка фішок */}
               <img 
                 src={smallChips} 
-                alt="chips" 
+                alt="Фішки" 
                 className="w-10 h-10 object-contain drop-shadow-lg"
               />
-              {/* Сумма ставки - впритык к картинке */}
+              {/* Сума ставки - впритул до картинки */}
               <div className="bg-gray-800 bg-opacity-70 text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg border border-gray-600">
                 {currentBet}
               </div>
@@ -263,7 +263,7 @@ const PokerPlayer = ({
           </div>
         )}
 
-        {/* ТЕСТОВАЯ ставка - если currentBet = 0, но это SB или BB */}
+        {/* ТЕСТОВА ставка - якщо currentBet = 0, але це SB або BB */}
         {currentBet === 0 && (isSmallBlind || isBigBlind) && (
           <div 
             className="absolute z-50"
@@ -276,7 +276,7 @@ const PokerPlayer = ({
             <div className="flex flex-col items-center">
               <img 
                 src={smallChips} 
-                alt="chips" 
+                alt="Фішки" 
                 className="w-12 h-12 object-contain drop-shadow-lg"
               />
               <div className="bg-gray-800 bg-opacity-70 text-white text-sm font-bold px-3 py-1 rounded-full shadow-lg border border-gray-600">

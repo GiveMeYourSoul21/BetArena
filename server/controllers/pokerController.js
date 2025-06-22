@@ -4,40 +4,40 @@ const {
   dealCards 
 } = require('../utils/pokerUtils');
 
-// Создание новой игры
+// Створення нової гри
 exports.createGame = async (req, res) => {
   try {
-    console.log('[CONTROLLER] Создание игры через контроллер');
+    console.log('[CONTROLLER] Створення гри через контролер');
     const { userId, username } = req.body;
     
     console.log('userId:', userId, 'username:', username);
     
-    // ИСПРАВЛЕНО: Создаем пользователя если его нет, или используем существующего
+    // ВИПРАВЛЕНО: Створюємо користувача якщо його немає, або використовуємо існуючого
     let user = null;
     try {
       if (userId && userId.toString().match(/^\d+$/)) {
-        // Если userId - число, ищем в базе
+        // Якщо userId - число, шукаємо в базі
         user = await User.findByPk(userId);
         if (!user) {
-          console.log(`[CONTROLLER] Пользователь с ID ${userId} не найден, продолжаем без проверки`);
+          console.log(`[CONTROLLER] Користувач з ID ${userId} не знайдений, продовжуємо без перевірки`);
         }
       } else {
-        // Если userId - строка, то это просто имя пользователя
-        console.log(`[CONTROLLER] userId "${userId}" не является числом, используем как username`);
+        // Якщо userId - рядок, то це просто ім'я користувача
+        console.log(`[CONTROLLER] userId "${userId}" не є числом, використовуємо як username`);
       }
     } catch (userError) {
-      console.log(`[CONTROLLER] Ошибка при поиске пользователя, продолжаем без проверки:`, userError.message);
+      console.log(`[CONTROLLER] Помилка при пошуку користувача, продовжуємо без перевірки:`, userError.message);
     }
     
-    // Рандомно выбираем позицию дилера (0-3)
+    // Рандомно вибираємо позицію дилера (0-3)
     const dealerPosition = Math.floor(Math.random() * 4);
-    console.log('Выбрана позиция дилера:', dealerPosition);
+    console.log('Вибрана позиція дилера:', dealerPosition);
     
-    // Создаем массив игроков
+    // Створюємо масив гравців
     const players = [
       {
         user: userId || null,
-        username: username || 'Игрок',
+        username: username || 'Гравець',
         chips: 1000,
         cards: [],
         position: 0,
@@ -53,7 +53,7 @@ exports.createGame = async (req, res) => {
       }
     ];
     
-    // Добавляем ботов
+    // Додаємо ботів
     for (let i = 1; i <= 3; i++) {
       players.push({
         username: `Bot ${i}`,
@@ -72,25 +72,25 @@ exports.createGame = async (req, res) => {
       });
     }
     
-    // Устанавливаем позиции в зависимости от дилера
+    // Встановлюємо позиції в залежності від дилера
     const sbPosition = (dealerPosition + 1) % 4;
     const bbPosition = (dealerPosition + 2) % 4;
     const utgPosition = (dealerPosition + 3) % 4;
     
-    console.log(`Позиции: Дилер=${dealerPosition}, SB=${sbPosition}, BB=${bbPosition}, UTG=${utgPosition}`);
+    console.log(`Позиції: Дилер=${dealerPosition}, SB=${sbPosition}, BB=${bbPosition}, UTG=${utgPosition}`);
     
     players[dealerPosition].isDealer = true;
     players[sbPosition].isSmallBlind = true;
     players[bbPosition].isBigBlind = true;
     players[utgPosition].isUTG = true;
     
-    // Устанавливаем начальные банки с учетом блайндов
-    players[sbPosition].chips = 990; // Минус малый блайнд
+    // Встановлюємо початкові банки з урахуванням блайндів
+    players[sbPosition].chips = 990; // Мінус малий блайнд
     players[sbPosition].currentBet = 10;
-    players[bbPosition].chips = 980; // Минус большой блайнд
+    players[bbPosition].chips = 980; // Мінус великий блайнд
     players[bbPosition].currentBet = 20;
     
-    // Создаем объект игры
+    // Створюємо об'єкт гри
     const gameData = {
       type: 'poker',
       players: players,
@@ -116,86 +116,86 @@ exports.createGame = async (req, res) => {
     
     const newGame = await PokerGame.create(gameData);
 
-    // Раздаем карты
+    // Роздаємо карти
     dealCards(newGame);
     
     await newGame.save();
     
-    console.log(`Игра создана через контроллер: ${newGame.id}`);
+    console.log(`Гра створена через контролер: ${newGame.id}`);
 
     res.status(201).json({
-      message: 'Игра создана',
+      message: 'Гра створена',
       gameId: newGame.id,
       dealerPosition: newGame.dealerPosition,
       players: newGame.players
     });
   } catch (error) {
-    console.error('Ошибка при создании игры:', error);
-    res.status(500).json({ message: 'Ошибка при создании игры' });
+    console.error('Помилка при створенні гри:', error);
+    res.status(500).json({ message: 'Помилка при створенні гри' });
   }
 };
 
-// Получение данных игры
+// Отримання даних гри
 exports.getGame = async (req, res) => {
   try {
     const { gameId } = req.params;
     
     const game = await PokerGame.findByPk(gameId);
     if (!game) {
-      return res.status(404).json({ message: 'Игра не найдена' });
+      return res.status(404).json({ message: 'Гру не знайдено' });
     }
 
     res.json(game);
   } catch (error) {
-    console.error('Ошибка при получении данных игры:', error);
-    res.status(500).json({ message: 'Ошибка при получении данных игры' });
+    console.error('Помилка при отриманні даних гри:', error);
+    res.status(500).json({ message: 'Помилка при отриманні даних гри' });
   }
 };
 
-// Начало игры
+// Початок гри
 exports.startGame = async (req, res) => {
   try {
     const { gameId } = req.params;
     
     const game = await PokerGame.findByPk(gameId);
     if (!game) {
-      return res.status(404).json({ message: 'Игра не найдена' });
+      return res.status(404).json({ message: 'Гру не знайдено' });
     }
 
     if (game.status !== 'waiting') {
-      return res.status(400).json({ message: 'Игра уже началась или завершена' });
+      return res.status(400).json({ message: 'Гра вже почалася або завершена' });
     }
 
-    // Убедимся, что у нас есть все игроки
+    // Переконуємося, що у нас є всі гравці
     if (game.players.length !== 4) {
-      return res.status(400).json({ message: 'Недостаточно игроков для начала игры' });
+      return res.status(400).json({ message: 'Недостатньо гравців для початку гри' });
     }
 
-    // Обновляем блайнды и балансы игроков
+    // Оновлюємо блайнди та баланси гравців
     await game.updateBlinds();
 
-    // Устанавливаем статус игры
+    // Встановлюємо статус гри
     game.status = 'playing';
     game.currentRound = 'preflop';
     
-    // Устанавливаем первый ход на UTG
+    // Встановлюємо перший хід на UTG
     game.currentTurn = (game.dealerPosition + 3) % 4;
 
     await game.save();
 
-    // Отправляем обновление через Socket.IO
+    // Відправляємо оновлення через Socket.IO
     if (req.io) {
       req.io.to(gameId).emit('gameUpdate', game);
     }
 
     res.json(game);
   } catch (error) {
-    console.error('Ошибка при начале игры:', error);
-    res.status(500).json({ message: 'Ошибка при начале игры' });
+    console.error('Помилка при початку гри:', error);
+    res.status(500).json({ message: 'Помилка при початку гри' });
   }
 };
 
-// Выход из игры
+// Вихід з гри
 exports.exitGame = async (req, res) => {
   try {
     const { gameId } = req.params;
@@ -203,22 +203,39 @@ exports.exitGame = async (req, res) => {
 
     const game = await PokerGame.findByPk(gameId);
     if (!game) {
-      return res.status(404).json({ message: 'Игра не найдена' });
+      return res.status(404).json({ message: 'Гру не знайдено' });
     }
 
-    // Если игра еще не завершена, помечаем её как завершенную
-    if (game.status !== 'finished') {
+    // Знаходимо гравця в грі
+    const playerIndex = game.players.findIndex(p => p.user === userId);
+    if (playerIndex === -1) {
+      return res.status(404).json({ message: 'Гравець не знайдений у грі' });
+    }
+
+    // Якщо гра активна, робимо fold для гравця
+    if (game.status === 'playing') {
+      game.players[playerIndex].folded = true;
+      game.players[playerIndex].hasActed = true;
+      
+      // Перевіряємо чи потрібно завершити гру
+      const activePlayers = game.players.filter(p => !p.folded);
+      if (activePlayers.length === 1) {
       game.status = 'finished';
-      await game.save();
+        game.winner = activePlayers[0].username;
+      }
     }
 
-    // Удаляем игру из базы данных
-    await PokerGame.destroy({ where: { id: gameId } });
+      await game.save();
+    
+    // Відправляємо оновлення через Socket.IO
+    if (req.io) {
+      req.io.to(gameId).emit('gameUpdate', game);
+    }
 
-    res.json({ message: 'Вы вышли из игры' });
+    res.json({ message: 'Успішно вийшли з гри' });
   } catch (error) {
-    console.error('Ошибка при выходе из игры:', error);
-    res.status(500).json({ message: 'Ошибка при выходе из игры' });
+    console.error('Помилка при виході з гри:', error);
+    res.status(500).json({ message: 'Помилка при виході з гри' });
   }
 };
 
