@@ -66,13 +66,13 @@ function Profile() {
         setBonusSuccess(data.message);
         setChips(data.chips);
         setLastBonus(data.lastBonus);
-        // Оновлюємо сторінку через 0.3 секунди після отримання бонусу
+        // Обновляем страницу через 0.3 секунду после получения бонуса
         setTimeout(() => {
           window.location.reload();
         }, 300);
       }
-    } catch (error) {
-      setBonusError('Помилка при отриманні бонусу');
+    } catch (e) {
+      setBonusError('Помилка сервера');
     } finally {
       setBonusLoading(false);
     }
@@ -105,194 +105,143 @@ function Profile() {
   };
 
   const handleUsernameSave = async () => {
-    if (!newUsername.trim() || newUsername === user.username) return;
-    
     setUsernameLoading(true);
     setUsernameError('');
     setUsernameSuccess('');
-    
     try {
-      const response = await fetch(`${API_URL}/api/user/update-username`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ username: newUsername })
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        setUsernameError(data.message || 'Помилка при оновленні імені');
-        return;
+      const data = await res.json();
+      if (!res.ok) {
+        setUsernameError(data.message || 'Помилка зміни імені');
+      } else {
+        setUsernameSuccess('Імʼя успішно змінено!');
+        updateUser(data);
+        setEditUsername(false);
       }
-      
-      setUsernameSuccess('Ім\'я користувача успішно оновлено');
-      updateUser(data);
-      setEditUsername(false);
-      setNewUsername('');
-    } catch (error) {
-      setUsernameError('Помилка при оновленні імені');
+    } catch (e) {
+      setUsernameError('Помилка сервера');
     } finally {
       setUsernameLoading(false);
     }
   };
 
   // Перевіряємо, чи доступний бонус
-  const isBonusAvailable = () => {
-    if (!lastBonus) return true;
-    const lastBonusTime = new Date(lastBonus);
+  let bonusAvailable = true;
+  if (lastBonus) {
+    const last = new Date(lastBonus);
     const now = new Date();
-    const timeDiff = now - lastBonusTime;
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
-    return hoursDiff >= 24;
-  };
-
-  const getTimeUntilNextBonus = () => {
-    if (!lastBonus) return null;
-    const lastBonusTime = new Date(lastBonus);
-    const nextBonusTime = new Date(lastBonusTime.getTime() + (24 * 60 * 60 * 1000));
-    const now = new Date();
-    
-    if (now >= nextBonusTime) return null;
-    
-    const timeDiff = nextBonusTime - now;
-    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}г ${minutes}хв`;
-  };
+    if (now - last < 24 * 60 * 60 * 1000) {
+      bonusAvailable = false;
+      if (msLeft === 0) setMsLeft(last.getTime() + 24 * 60 * 60 * 1000 - now.getTime());
+    }
+  }
 
   if (!user) {
     return <div className="text-center">Завантаження профілю...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8 text-center">Профіль</h1>
-          
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <div className="flex items-center space-x-4 mb-6">
-              <img 
-                src={defaultAvatar} 
-                alt="Аватар" 
-                className="w-20 h-20 rounded-full"
-              />
-              <div>
-                <h2 className="text-xl font-semibold">{user?.username}</h2>
-                <p className="text-gray-400">{user?.email}</p>
+    <div className="max-w-2xl mx-auto">
+      <div className="bg-gray-800 rounded-lg p-6">
+        <h2 className="text-3xl font-bold mb-6 text-center">Профіль</h2>
+
+        <div className="flex flex-col items-center mb-6">
+          <img
+            src={defaultAvatar}
+            alt="Аватар"
+            className="w-28 h-28 rounded-full object-cover border-4 border-gray-700 shadow-lg mb-2"
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-400">Ім'я користувача</label>
+            {!editUsername ? (
+              <div className="flex items-center gap-2">
+            <p className="text-xl">{user.username}</p>
+                <button
+                  className="ml-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                  onClick={() => { setEditUsername(true); setUsernameError(''); setUsernameSuccess(''); }}
+                >Змінити</button>
               </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Ім'я користувача:</span>
-                <div className="flex items-center">
-                  <span className="text-white">{user?.username}</span>
-                  <button
-                    className="ml-2 text-gray-400 hover:text-gray-600 underline text-sm"
-                    onClick={() => { setEditUsername(true); setUsernameError(''); setUsernameSuccess(''); }}
-                  >Змінити</button>
-                </div>
-              </div>
-              
-              {editUsername && (
-                <div className="bg-gray-700 p-4 rounded-lg">
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      placeholder="Нове ім'я користувача"
-                      className="w-full px-3 py-2 bg-gray-600 text-white rounded border border-gray-500 focus:border-blue-500 outline-none"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded"
-                        onClick={handleUsernameSave}
-                        disabled={usernameLoading || !newUsername.trim() || newUsername === user.username}
-                      >Зберегти</button>
-                      <button
-                        className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
-                        onClick={() => {
-                          setEditUsername(false);
-                          setNewUsername('');
-                          setUsernameError('');
-                          setUsernameSuccess('');
-                        }}
-                      >Скасувати</button>
-                    </div>
-                    {usernameError && <p className="text-red-400 text-sm">{usernameError}</p>}
-                    {usernameSuccess && <p className="text-green-400 text-sm">{usernameSuccess}</p>}
-                  </div>
-                </div>
-              )}
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Email:</span>
-                <span className="text-white">{user?.email}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Фішки:</span>
-                <span className="text-yellow-400 font-bold">{chips}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300">Останній бонус:</span>
-                <span className="text-gray-400">
-                  {lastBonus ? new Date(lastBonus).toLocaleDateString('uk-UA') : 'Ніколи'}
-                </span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h3 className="text-xl font-semibold mb-4">Щоденний бонус</h3>
-            
-            {isBonusAvailable() ? (
-              <button
-                onClick={handleBonus}
-                disabled={bonusLoading}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white py-3 px-6 rounded-lg font-bold text-lg"
-              >
-                {bonusLoading ? 'Отримання...' : 'Отримати щоденний бонус'}
-              </button>
             ) : (
-              <div className="text-center">
-                <p className="text-gray-400 mb-2">Наступний бонус буде доступний через:</p>
-                <p className="text-yellow-400 font-bold text-lg">{getTimeUntilNextBonus()}</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="rounded px-2 py-1 text-black"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  disabled={usernameLoading}
+                  maxLength={24}
+                />
+                <button
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded"
+                  onClick={handleUsernameSave}
+                  disabled={usernameLoading || !newUsername.trim() || newUsername === user.username}
+                >Зберегти</button>
+                <button
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded"
+                  onClick={() => { setEditUsername(false); setNewUsername(user.username); setUsernameError(''); setUsernameSuccess(''); }}
+                  disabled={usernameLoading}
+                >Скасувати</button>
               </div>
             )}
-            
-            {bonusError && (
-              <div className="mt-4 p-3 bg-red-600 rounded-lg">
-                <p className="text-white">{bonusError}</p>
-              </div>
-            )}
-            
-            {bonusSuccess && (
-              <div className="mt-4 p-3 bg-green-600 rounded-lg">
-                <p className="text-white">{bonusSuccess}</p>
-              </div>
-            )}
+            {usernameError && <div className="text-red-400 text-sm mt-1">{usernameError}</div>}
+            {usernameSuccess && <div className="text-green-400 text-sm mt-1">{usernameSuccess}</div>}
           </div>
 
-          {/* Блок видалення акаунту */}
-          <div className="bg-red-900 rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 text-red-400">Небезпечна зона</h3>
-            <p className="text-gray-300 mb-4">
-              Видалення акаунту призведе до безповоротної втрати всіх даних.
+          <div>
+            <label className="block text-sm font-medium text-gray-400">Email</label>
+            <p className="text-xl">{user.email}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400">Chips</label>
+            <p className="text-xl">{chips}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-400">Учасник з</label>
+            <p className="text-xl">
+              {user.lastBonus 
+                ? new Date(user.lastBonus).toLocaleDateString('uk-UA')
+                : 'Дата невідома'
+              }
             </p>
+          </div>
+
+          <div className="mt-6">
+            <button
+              className={`bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition-colors ${bonusLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              onClick={handleBonus}
+              disabled={!bonusAvailable || bonusLoading}
+            >
+              {bonusLoading
+                ? 'Завантаження...'
+                : bonusAvailable
+                  ? 'Отримати щоденний бонус'
+                  : `Бонус доступний через ${getTimeString(msLeft)}`}
+            </button>
+            {bonusError && <div className="text-red-400 mt-2">{bonusError}</div>}
+            {bonusSuccess && <div className="text-green-400 mt-2">{bonusSuccess}</div>}
+          </div>
+
+          {/* Блок удаления аккаунта */}
+          <div className="mt-8 pt-6 border-t border-gray-600">
             {!showDeleteConfirm ? (
               <button
-                className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg"
+                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                Видалити акаунт
+                Видалити обліковий запис
               </button>
             ) : (
               <div className="bg-red-900 bg-opacity-20 border border-red-600 rounded-lg p-4">
