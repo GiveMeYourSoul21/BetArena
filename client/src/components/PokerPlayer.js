@@ -37,20 +37,28 @@ const PokerPlayer = ({
     if (player?.lastAction && player.lastAction.timestamp) {
       const timeSinceAction = Date.now() - player.lastAction.timestamp;
       
-      // Показываем действие только если оно произошло недавно (в течение 3 секунд)
-      if (timeSinceAction < 3000) {
+      console.log(`[ACTION-BADGE] ${displayName}: lastAction=${player.lastAction.action}, timeSince=${timeSinceAction}ms`);
+      
+      // Показываем действие только если оно произошло недавно (в течение 8 секунд)
+      if (timeSinceAction < 8000) {
+        console.log(`[ACTION-BADGE] ${displayName}: Показуємо дію ${player.lastAction.action}`);
         setCurrentAction(player.lastAction);
         setShowAction(true);
         
-        // Скрываем через 1.5 секунды
+        // Скрываем через 3 секунды
         const timer = setTimeout(() => {
+          console.log(`[ACTION-BADGE] ${displayName}: Приховуємо дію ${player.lastAction.action}`);
           setShowAction(false);
-        }, 1500);
+        }, 3000);
         
         return () => clearTimeout(timer);
+      } else {
+        console.log(`[ACTION-BADGE] ${displayName}: Дія застара (${timeSinceAction}ms > 8000ms)`);
       }
+    } else {
+      console.log(`[ACTION-BADGE] ${displayName}: Немає lastAction або timestamp`);
     }
-  }, [player?.lastAction]);
+  }, [player?.lastAction, displayName]);
 
   // Выбираем правильный аватар
   const avatarSrc = isSelf ? userAvatar : defaultAvatar;

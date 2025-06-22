@@ -316,8 +316,8 @@ router.get('/:gameId', async (req, res) => {
       }
     }
     
-    // Убедимся что у всех есть минимальные фишки
-    await ensureMinimumChips(game);
+    // ВИДАЛЕНО: автоматичне поповнення фішок
+    // await ensureMinimumChips(game);
     
     // ДОБАВЛЕНО: проверяем если игра была заменена новой
     if (game.status === 'replaced' && game.nextGameId) {
@@ -1548,13 +1548,14 @@ async function advanceToNextRound(game) {
     return;
   }
 
-  // ИСПРАВЛЕНИЕ: Сбрасываем hasActed и lastAction у всех активных игроков для нового раунда
-  console.log(`[ROUND] 🔄 СБРОС hasActed и lastAction для нового раунда`);
+  // ИСПРАВЛЕНИЕ: Сбрасываем hasActed для нового раунда, но НЕ очищаем lastAction
+  console.log(`[ROUND] 🔄 СБРОС hasActed для нового раунда (lastAction залишаємо)`);
   game.players.forEach((player, index) => {
     if (!player.folded) {
-      console.log(`[ROUND] Сбрасываем hasActed и lastAction для игрока ${index}: ${player.username}`);
+      console.log(`[ROUND] Сбрасываем hasActed для игрока ${index}: ${player.username}`);
       player.hasActed = false;
-      player.lastAction = null; // Очищаем последнее действие
+      // НЕ очищаем lastAction - пусть показывается дольше
+      // player.lastAction = null;
     }
   });
 
