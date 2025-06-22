@@ -536,14 +536,15 @@ function PokerGame() {
     }
   }, [gameData, user, gameId, isActionInProgress, lastActionTime]);
 
-  // Хук для автооновлення
-  useInterval(() => {
-    // Автооновлюємо дані, тільки якщо гра активна і не йде дія
-    if (gameData && gameData.status === 'playing' && !isActionInProgress) {
-      console.log(`[CLIENT] Автооновлення: запит до гри ${gameId}`);
-      fetchGameData();
-    }
-  }, 3000); // ЗМІНЕНО: було 1000, тепер рідше
+  // ПРИБРАНО: Дублюючий хук автооновлення - основне автооновлення вже є в useEffect вище
+
+  // Функція для показу/приховування карт
+  const handleShowdownToggle = (playerId) => {
+    setShowCards(prev => ({
+      ...prev,
+      [playerId]: !prev[playerId]
+    }));
+  };
 
   // Функція присоединения до гри
   const handleJoinGame = async () => {
