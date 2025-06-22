@@ -38,7 +38,7 @@ function Rules() {
                     : 'border-transparent text-white hover:text-gray-300 hover:border-gray-600'
                 } w-1/2 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors`}
               >
-                Правила Покеру
+                Техаський Холдем
               </button>
             </nav>
           </div>
@@ -47,11 +47,11 @@ function Rules() {
           <div className="p-8 bg-gray-800">
             {activeTab === 'blackjack' ? (
               <div className="space-y-8">
-                <h2 className="text-3xl font-bold text-white">Правила Блекджеку</h2>
+                <h2 className="text-3xl font-bold text-white">Правила Blackjack</h2>
                 
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-white">Мета гри</h3>
-                  <p className="text-gray-300">Набрати комбінацію карт, сума очок якої ближче до 21, ніж у дилера, але не перевищує 21. Якщо сума очок перевищує 21, це називається "перебір" (bust), і гравець автоматично програє.</p>
+                  <p className="text-gray-300">Набрати комбінацію карт, сума очок якої ближче до 21, ніж у дилера, але не перевищує 21. Якщо сума очок перевищує 21, це називається "перебір", і гравець автоматично програє.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -150,68 +150,18 @@ function Rules() {
                           backgroundPosition: 'center'
                         }} />
                       </div>
-                      <p className="text-sm text-gray-300">Король (10) + Вісімка (8) + П'ятірка (5) = 23</p>
+                      <p className="text-sm text-gray-300">Король (10) + (8) + (5) = 23</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white">Особливі правила</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gray-700 p-6 rounded-lg">
-                      <h4 className="font-medium text-white mb-4 text-center">Блекджек (21 очко)</h4>
-                      <p className="text-gray-300 mb-4">Якщо у вас блекджек (туз + картинка або 10), ви отримуєте виплату 3:2 від вашої ставки.</p>
-                      <div className="flex justify-center space-x-3">
-                        <div className="w-[100px] h-[150px]" style={{
-                          backgroundImage: `url(${getCardImage('A', '♠')})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }} />
-                        <div className="w-[100px] h-[150px]" style={{
-                          backgroundImage: `url(${getCardImage('K', '♥')})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }} />
-                      </div>
-                      <p className="text-sm text-gray-300 text-center mt-3">Туз + Король = Блекджек!</p>
-                    </div>
-                    <div className="bg-gray-700 p-6 rounded-lg">
-                      <h4 className="font-medium text-white mb-4 text-center">Альтернативний блекджек</h4>
-                      <p className="text-gray-300 mb-4">Туз + будь-яка картинка з номіналом 10 також дає блекджек.</p>
-                      <div className="flex justify-center space-x-3">
-                        <div className="w-[100px] h-[150px]" style={{
-                          backgroundImage: `url(${getCardImage('A', '♥')})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }} />
-                        <div className="w-[100px] h-[150px]" style={{
-                          backgroundImage: `url(${getCardImage('10', '♠')})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center'
-                        }} />
-                      </div>
-                      <p className="text-sm text-gray-300 text-center mt-3">Туз + Десятка = Блекджек!</p>
-                    </div>
-                  </div>
-                  
+                  <h3 className="text-xl font-semibold text-white">Правила</h3>
                   <ul className="list-disc list-inside text-gray-300 space-y-2">
                     <li>Дилер повинен брати картини до 17 очок</li>
                     <li>При переборі (більше 21) гравець автоматично програє</li>
-                    <li>Якщо у дилера і гравця однакова кількість очок, це називається "пуш" (push) і ставки повертаються</li>
-                    <li>Якщо у гравця блекджек, а у дилера ні, гравець отримує виплату 3:2</li>
+                    <li>Якщо у дилера і гравця однакова кількість очок, це значить, що ставки повертаються</li>
                   </ul>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white">Стратегія гри</h3>
-                  <div className="bg-gray-700 p-6 rounded-lg">
-                    <p className="text-gray-300 mb-4">У блекджеку є кілька базових стратегій, які можуть допомогти вам приймати правильні рішення:</p>
-                    
-                    <ul className="space-y-2 text-gray-300">
-                      <li>• Завжди беріть карту, якщо у вас 12-16 очок, а у дилера 7 або вище</li>
-                      <li>• Зупиняйтесь, якщо у вас 17 або більше очок</li>
-                    </ul>
-                  </div>
                 </div>
               </div>
             ) : (

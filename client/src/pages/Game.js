@@ -1102,10 +1102,10 @@ function PokerGame() {
               const currentPlayer = gameData.players[gameData.currentTurn] || {};
               const ourPlayer = gameData.players.find(p => p.username === user?.username) || {}; // ДОБАВЛЕНО: находим нашего игрока
               const playerChips = currentPlayer.chips || 0;
-              const maxPossibleBet = (currentPlayer.currentBet || 0) + playerChips; // Убрали ограничение 1000
+              const maxPossibleBet = playerChips; // Только фишки игрока
               const potBet = Math.floor((percent / 100) * playerChips);
               const minRaise = currentBet + 20;
-              const maxPlayerBet = Math.min(Math.max(potBet + (currentPlayer.currentBet || 0), minRaise), maxPossibleBet);
+              const maxPlayerBet = Math.min(Math.max(potBet, minRaise), maxPossibleBet);
               const isDisabled = !isPlayerTurn || ourPlayer.folded || playerChips === 0 || maxPlayerBet < minRaise;
               return (
                 <button 
@@ -1130,7 +1130,7 @@ function PokerGame() {
             <input 
               type="range" 
               min={currentBet + 20}
-              max={(gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0)}
+              max={gameData.players[gameData.currentTurn]?.chips || 0}
               step="10"
               value={betAmount}
               onChange={(e) => setBetAmount(parseInt(e.target.value))}
@@ -1139,10 +1139,10 @@ function PokerGame() {
                                   (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0) ? 'opacity-50' : ''
               }`}
               style={{
-                background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 100%)`
+                background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 ${((betAmount-(currentBet+20))/((gameData.players[gameData.currentTurn]?.chips || 0)-(currentBet+20)))*100}%, #374151 100%)`
               }}
             />
-            <span className="text-white text-sm">{(gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0)}</span>
+            <span className="text-white text-sm">{gameData.players[gameData.currentTurn]?.chips || 0}</span>
           </div>
 
           {/* Кнопки действий */}
@@ -1187,7 +1187,7 @@ function PokerGame() {
             )}
 
             <button
-              onClick={() => handlePlayerAction('bet', Math.min(betAmount, (gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0)))}
+              onClick={() => handlePlayerAction('bet', Math.min(betAmount, gameData.players[gameData.currentTurn]?.chips || 0))}
               disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress}
               className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
                 (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress)
@@ -1195,7 +1195,7 @@ function PokerGame() {
                   : 'bg-orange-600 hover:bg-orange-700 hover:scale-105'
               }`}
             >
-              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, (gameData.players[gameData.currentTurn]?.currentBet || 0) + (gameData.players[gameData.currentTurn]?.chips || 0))}`}
+              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, gameData.players[gameData.currentTurn]?.chips || 0)}`}
             </button>
           </div>
         </div>
