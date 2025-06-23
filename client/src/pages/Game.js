@@ -235,9 +235,15 @@ function PokerGame() {
           const maxBet = Math.max(...response.data.players.map(p => p.currentBet || 0));
           setCurrentBet(maxBet);
           
-          // Устанавливаем размер ставки как минимальный рейз
-          const minRaise = maxBet + (response.data.settings?.bigBlind || 20);
-          setBetAmount(minRaise);
+          // Устанавливаем размер ставки как минимальное значение для игрока
+          const ourPlayer = response.data.players.find(p => p.username === user?.username);
+          if (ourPlayer) {
+            const minBet = 20;
+            const playerChips = ourPlayer.chips || 0;
+            // Устанавливаем начальное значение как 50% от банка игрока, но не менее минимальной ставки
+            const initialBet = Math.max(minBet, Math.floor(playerChips * 0.5));
+            setBetAmount(Math.min(initialBet, playerChips));
+          }
         }
         
         // Обновляем текущего игрока и проверяем чей ход
@@ -336,9 +342,15 @@ function PokerGame() {
             const maxBet = Math.max(...newGameData.players.map(p => p.currentBet || 0));
             setCurrentBet(maxBet);
             
-            // Устанавливаем размер ставки как минимальный рейз
-            const minRaise = maxBet + (newGameData.settings?.bigBlind || 20);
-            setBetAmount(minRaise);
+            // Устанавливаем размер ставки как минимальное значение для игрока
+            const ourPlayer = newGameData.players.find(p => p.username === user?.username);
+            if (ourPlayer) {
+              const minBet = 20;
+              const playerChips = ourPlayer.chips || 0;
+              // Устанавливаем начальное значение как 50% от банка игрока, но не менее минимальной ставки
+              const initialBet = Math.max(minBet, Math.floor(playerChips * 0.5));
+              setBetAmount(Math.min(initialBet, playerChips));
+            }
           }
           
           // Обновляем состояние хода
@@ -497,9 +509,15 @@ function PokerGame() {
         const maxBet = Math.max(...response.data.players.map(p => p.currentBet || 0));
         setCurrentBet(maxBet);
         
-        // Устанавливаем размер ставки как минимальный рейз
-        const minRaise = maxBet + (response.data.settings?.bigBlind || 20);
-        setBetAmount(minRaise);
+        // Устанавливаем размер ставки как минимальное значение для игрока
+        const ourPlayer = response.data.players.find(p => p.username === user?.username);
+        if (ourPlayer) {
+          const minBet = 20;
+          const playerChips = ourPlayer.chips || 0;
+          // Устанавливаем начальное значение как 50% от банка игрока, но не менее минимальной ставки
+          const initialBet = Math.max(minBet, Math.floor(playerChips * 0.5));
+          setBetAmount(Math.min(initialBet, playerChips));
+        }
       }
       
       // Обновляем состояние хода
@@ -829,7 +847,7 @@ function PokerGame() {
                 )}
               </div>
             )}
-
+            
             </div>
           </div>
         )}
@@ -1099,24 +1117,17 @@ function PokerGame() {
           {/* Кнопки быстрых ставок в процентах */}
           <div className="grid grid-cols-4 gap-2">
             {[33, 50, 75, 100].map(percent => {
-              const currentPlayer = gameData.players[gameData.currentTurn] || {};
-              const ourPlayer = gameData.players.find(p => p.username === user?.username) || {}; // ДОБАВЛЕНО: находим нашего игрока
-              const playerChips = currentPlayer.chips || 0;
-              const playerCurrentBet = currentPlayer.currentBet || 0;
+              const ourPlayer = gameData.players.find(p => p.username === user?.username) || {};
+              const playerChips = ourPlayer.chips || 0;
               
-              // ИСПРАВЛЕНО: рассчитываем правильную ставку
-              const potBet = Math.floor((percent / 100) * playerChips);
-              const totalBetAmount = playerCurrentBet + potBet; // Общая ставка игрока
-              const minRaise = currentBet + 20;
-              
-              // Для 100% всегда ставим все фишки (All-In)
-              const finalBetAmount = percent === 100 ? playerCurrentBet + playerChips : Math.max(totalBetAmount, minRaise);
+              // Рассчитываем ставку как процент от фишек игрока
+              const betAmount = Math.floor((percent / 100) * playerChips);
               
               const isDisabled = !isPlayerTurn || ourPlayer.folded || playerChips === 0;
               return (
                 <button 
                   key={percent}
-                  onClick={() => !isDisabled && setBetAmount(finalBetAmount)}
+                  onClick={() => !isDisabled && setBetAmount(betAmount)}
                   disabled={isDisabled}
                   className={`text-white text-xs font-bold py-2 px-3 rounded-lg transition-all ${
                     isDisabled 
@@ -1133,31 +1144,31 @@ function PokerGame() {
           {/* Ползунок ставки без фона и текста */}
           <div className="flex items-center gap-3 min-w-80">
             {(() => {
-              const currentPlayer = gameData.players[gameData.currentTurn] || {};
-              const playerChips = currentPlayer.chips || 0;
-              const playerCurrentBet = currentPlayer.currentBet || 0;
-              const minRaise = currentBet + 20;
-              const maxTotalBet = playerCurrentBet + playerChips; // Максимальная общая ставка (All-In)
+              const ourPlayer = gameData.players.find(p => p.username === user?.username) || {};
+              const playerChips = ourPlayer.chips || 0;
+              const playerCurrentBet = ourPlayer.currentBet || 0;
+              const minBet = 20; // Минимальная ставка всегда 20
+              const maxBet = playerChips; // Максимальная ставка = все фишки игрока
               
               return (
                 <>
-                  <span className="text-white text-sm">{minRaise}</span>
-                  <input 
-                    type="range" 
-                    min={minRaise}
-                    max={maxTotalBet}
-                    step="10"
-                    value={betAmount}
-                    onChange={(e) => setBetAmount(parseInt(e.target.value))}
-                    disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || playerChips === 0}
-                    className={`flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider ${
-                      (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || playerChips === 0) ? 'opacity-50' : ''
-                    }`}
-                    style={{
-                      background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-minRaise)/(maxTotalBet-minRaise))*100}%, #374151 ${((betAmount-minRaise)/(maxTotalBet-minRaise))*100}%, #374151 100%)`
-                    }}
-                  />
-                  <span className="text-white text-sm">{maxTotalBet}</span>
+                  <span className="text-white text-sm">{minBet}</span>
+            <input 
+              type="range" 
+                    min={minBet}
+                    max={maxBet}
+              step="10"
+              value={Math.min(betAmount, maxBet)}
+              onChange={(e) => setBetAmount(parseInt(e.target.value))}
+                    disabled={!isPlayerTurn || ourPlayer.folded || playerChips === 0}
+              className={`flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider ${
+                      (!isPlayerTurn || ourPlayer.folded || playerChips === 0) ? 'opacity-50' : ''
+              }`}
+              style={{
+                      background: `linear-gradient(to right, #ffd700 0%, #ffd700 ${((betAmount-minBet)/(maxBet-minBet))*100}%, #374151 ${((betAmount-minBet)/(maxBet-minBet))*100}%, #374151 100%)`
+              }}
+            />
+                  <span className="text-white text-sm">{maxBet}</span>
                 </>
               );
             })()}
@@ -1206,19 +1217,19 @@ function PokerGame() {
 
             <button
               onClick={() => {
-                const currentPlayer = gameData.players[gameData.currentTurn] || {};
-                const actualBetAmount = Math.min(betAmount, currentPlayer.chips || 0);
-                const totalBetAmount = currentPlayer.currentBet + actualBetAmount;
+                const ourPlayer = gameData.players.find(p => p.username === user?.username) || {};
+                const actualBetAmount = Math.min(betAmount, ourPlayer.chips || 0);
+                const totalBetAmount = (ourPlayer.currentBet || 0) + actualBetAmount;
                 handlePlayerAction('bet', totalBetAmount);
               }}
-              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress}
+              disabled={!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players.find(p => p.username === user?.username)?.chips || 0) === 0 || isActionInProgress}
               className={`text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ${
-                (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players[gameData.currentTurn]?.chips || 0) === 0 || isActionInProgress)
+                (!isPlayerTurn || (gameData.players.find(p => p.username === user?.username)?.folded) || (gameData.players.find(p => p.username === user?.username)?.chips || 0) === 0 || isActionInProgress)
                   ? 'bg-gray-800 opacity-50 cursor-not-allowed'
                   : 'bg-orange-600 hover:bg-orange-700 hover:scale-105'
               }`}
             >
-              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, gameData.players[gameData.currentTurn]?.chips || 0)}`}
+              {isActionInProgress ? '...' : `${currentBet > 0 ? 'Raise' : 'Bet'} ${Math.min(betAmount, gameData.players.find(p => p.username === user?.username)?.chips || 0)}`}
             </button>
           </div>
         </div>

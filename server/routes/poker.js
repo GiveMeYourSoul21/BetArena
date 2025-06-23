@@ -535,7 +535,7 @@ router.post('/:gameId/action', async (req, res) => {
           player.chips -= callAmount;
           player.currentBet += callAmount;
           game.pot += callAmount;
-          player.hasActed = true;
+        player.hasActed = true;
           player.lastAction = { action: 'call', amount: callAmount, timestamp: Date.now() };
           console.log(`[ACTION] ✅ ${player.username} уравнял ставку: ${callAmount}, lastAction установлен:`, player.lastAction);
         } else {
@@ -545,7 +545,7 @@ router.post('/:gameId/action', async (req, res) => {
         
       case 'check':
         if (player.currentBet === currentBet) {
-          player.hasActed = true;
+      player.hasActed = true;
           player.lastAction = { action: 'check', timestamp: Date.now() };
           console.log(`[ACTION] ✅ ${player.username} чекнул, lastAction установлен:`, player.lastAction);
         } else {
@@ -555,7 +555,7 @@ router.post('/:gameId/action', async (req, res) => {
         
       case 'bet':
       case 'raise':
-        const betAmount = parseInt(amount);
+      const betAmount = parseInt(amount);
         const minRaise = currentBet + 20; // Минимальный рейз = текущая ставка + размер большого блайнда
         const totalBetNeeded = betAmount - player.currentBet;
         
@@ -573,7 +573,7 @@ router.post('/:gameId/action', async (req, res) => {
           player.chips -= totalBetNeeded;
           game.pot += totalBetNeeded;
           player.currentBet = betAmount;
-          player.hasActed = true;
+        player.hasActed = true;
           
           // Отмечаем All-In если игрок поставил все фишки
           if (player.chips === 0) {
@@ -592,7 +592,7 @@ router.post('/:gameId/action', async (req, res) => {
           });
       
           console.log(`Игрок ${player.username} поставил: ${betAmount}`);
-        } else {
+          } else {
           return res.status(400).json({ message: 'Недостаточно фишек для ставки' });
         }
         break;
@@ -696,7 +696,7 @@ router.post('/:gameId/action', async (req, res) => {
     game.changed('players', true);
     game.changed('pot', true);
     game.changed('settings', true);
-    
+
     // Сохраняем игру используя Sequelize
     await game.save();
     
@@ -1690,7 +1690,7 @@ async function advanceToNextRound(game) {
       } catch (error) {
         console.error('[ROUND] Ошибка при запуске бота:', error);
       }
-    }, 1000);
+    }, 3000); // УВЕЛИЧЕНО с 1000 до 3000 мс
   } else {
     console.log(`[ROUND] Первый игрок нового раунда: ${currentPlayer?.username} (isBot: ${currentPlayer?.isBot})`);
   }

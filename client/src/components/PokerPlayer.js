@@ -114,12 +114,12 @@ const PokerPlayer = ({
     switch (angle) {
       case 0: // Снизу (игрок) - под картами
         return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
-      case 90: // Слева (Bot 1) - под картами
-        return { top: '50%', right: '-60px', transform: 'translateY(-50%)' };
+      case 90: // Слева (Bot 1) - рядом с именем игрока
+        return { bottom: '-25px', left: '50%', transform: 'translateX(-50%)' };
       case 180: // Сверху (Bot 2) - под картами  
         return { top: '85px', left: '50%', transform: 'translateX(-50%)' };
-      case 270: // Справа (Bot 3) - под картами
-        return { top: '50%', left: '-60px', transform: 'translateY(-50%)' };
+      case 270: // Справа (Bot 3) - рядом с именем игрока
+        return { bottom: '-25px', left: '50%', transform: 'translateX(-50%)' };
       default:
         return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
     }
@@ -369,8 +369,8 @@ const PokerPlayer = ({
                 {isSmallBlind ? '10' : '20'} 
               </div>
             </div>
-          </div>
-        )}
+        </div>
+      )}
 
         {/* Статус последнего действия игрока */}
         {showAction && currentAction && (
