@@ -203,15 +203,6 @@ function BlackjackGame({ gameId }) {
         <div className="player-info">
           <img src={defaultAvatar} alt="Dealer" className="player-avatar" />
           <div className="player-name">Bot</div>
-          {gamePhase !== 'betting' && (
-            <div className="hand-value">
-              {gamePhase === 'dealer' || gamePhase === 'finished'
-                ? calculateHandValue(dealerHand)
-                : dealerHand.length > 0 && !dealerHand[0]?.hidden
-                ? calculateHandValue(dealerHand.filter(card => !card.hidden))
-                : '?'}
-            </div>
-          )}
         </div>
         <div className="cards-container">
           {dealerHand.map((card, index) => renderCard(card, index, card.isNew))}
@@ -226,11 +217,6 @@ function BlackjackGame({ gameId }) {
         <div className="player-info">
           <img src={avatar} alt={user?.username || 'Гість'} className="player-avatar" />
           <div className="player-name">{user?.username || 'Гість'}</div>
-          {gamePhase !== 'betting' && (
-            <div className="hand-value">
-              {calculateHandValue(playerHand)}
-            </div>
-          )}
         </div>
       </div>
 

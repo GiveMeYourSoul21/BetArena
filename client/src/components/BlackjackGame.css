@@ -181,23 +181,42 @@
 input[type="range"] {
   -webkit-appearance: none;
   width: 100%;
-  height: 8px;
+  height: 12px;
   background: #2d3748;
-  border-radius: 4px;
+  border-radius: 6px;
   outline: none;
+  border: 2px solid #4a5568;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
-  background: #ffd700;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 215, 0, 0.5);
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 215, 0, 0.8);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(45deg, #ffd700, #ffed4e);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
   background: #ffed4a;
   transform: scale(1.1);
 }
@@ -243,12 +262,15 @@ button:hover:after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 2rem;
-  border-radius: 1rem;
+  background: rgba(0, 0, 0, 0.95);
+  padding: 2.5rem;
+  border-radius: 1.5rem;
   text-align: center;
   color: white;
-  min-width: 300px;
+  min-width: 400px;
+  max-width: 500px;
+  border: 3px solid #FFD700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
 .bet-title {
@@ -270,26 +292,38 @@ button:hover:after {
 }
 
 .chip-button {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
-  border: 3px solid #FFD700;
-  background: #8B4513;
+  border: 4px solid #FFD700;
+  background: linear-gradient(45deg, #8B4513, #A0522D);
   color: white;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
 }
 
 .chip-button:hover:not(:disabled) {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 215, 0, 0.5);
+  border-color: #FFED4E;
 }
 
 .chip-button.selected {
-  background: #DAA520;
+  background: linear-gradient(45deg, #DAA520, #FFD700);
   border-color: white;
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.8);
+  animation: selectedPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes selectedPulse {
+  0%, 100% { box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.8); }
+  50% { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 215, 0, 1); }
 }
 
 .chip-button:disabled {
