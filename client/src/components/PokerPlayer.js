@@ -114,12 +114,12 @@ const PokerPlayer = ({
     switch (angle) {
       case 0: // Снизу (игрок) - под картами
         return { bottom: '95px', left: '50%', transform: 'translateX(-50%)' };
-      case 90: // Слева (Bot 1) - піднімаємо ще вище
-        return { bottom: '25px', left: '50%', transform: 'translateX(-50%)' };
-      case 180: // Сверху (Bot 2) - под картами  
-        return { top: '95px', left: '50%', transform: 'translateX(-50%)' };
-      case 270: // Справа (Bot 3) - піднімаємо ще вище
-        return { bottom: '25px', left: '50%', transform: 'translateX(-50%)' };
+      case 90: // Слева (Bot 1) - піднімаємо трохи вище
+        return { bottom: '35px', left: '50%', transform: 'translateX(-50%)' };
+      case 180: // Сверху (Bot 2) - піднімаємо значно вище
+        return { top: '75px', left: '50%', transform: 'translateX(-50%)' };
+      case 270: // Справа (Bot 3) - піднімаємо трохи вище
+        return { bottom: '35px', left: '50%', transform: 'translateX(-50%)' };
       default:
         return { bottom: '95px', left: '50%', transform: 'translateX(-50%)' };
     }

@@ -1113,7 +1113,7 @@ function PokerGame() {
           
       {/* Панель управления - снизу справа */}
       {gameData?.status === 'playing' && (
-        <div className="absolute bottom-32 right-6 xl:bottom-32 xl:right-6 2xl:bottom-32 2xl:right-6 flex flex-col items-end gap-3 z-40">
+        <div className="absolute bottom-32 right-6 xl:bottom-40 xl:right-20 2xl:bottom-32 2xl:right-32 flex flex-col items-end gap-3 z-40">
           {/* Кнопки быстрых ставок в процентах */}
           <div className="grid grid-cols-4 gap-2">
             {[33, 50, 75, 100].map(percent => {
