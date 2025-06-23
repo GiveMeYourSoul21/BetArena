@@ -113,15 +113,15 @@ const PokerPlayer = ({
   const getActionBadgePosition = () => {
     switch (angle) {
       case 0: // Снизу (игрок) - под картами
-        return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
-      case 90: // Слева (Bot 1) - рядом с именем игрока
-        return { bottom: '-25px', left: '50%', transform: 'translateX(-50%)' };
+        return { bottom: '95px', left: '50%', transform: 'translateX(-50%)' };
+      case 90: // Слева (Bot 1) - выше и ближе к центру
+        return { bottom: '10px', left: '50%', transform: 'translateX(-50%)' };
       case 180: // Сверху (Bot 2) - под картами  
-        return { top: '85px', left: '50%', transform: 'translateX(-50%)' };
-      case 270: // Справа (Bot 3) - рядом с именем игрока
-        return { bottom: '-25px', left: '50%', transform: 'translateX(-50%)' };
+        return { top: '95px', left: '50%', transform: 'translateX(-50%)' };
+      case 270: // Справа (Bot 3) - выше и ближе к центру
+        return { bottom: '10px', left: '50%', transform: 'translateX(-50%)' };
       default:
-        return { bottom: '85px', left: '50%', transform: 'translateX(-50%)' };
+        return { bottom: '95px', left: '50%', transform: 'translateX(-50%)' };
     }
   };
 

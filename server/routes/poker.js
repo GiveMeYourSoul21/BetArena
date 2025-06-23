@@ -238,7 +238,7 @@ router.post('/create', async (req, res) => {
         } catch (error) {
           console.error('[CREATE] ❌ Ошибка при запуске бота в созданной игре:', error);
         }
-      }, 4000); // ИЗМЕНЕНО: увеличил с 1000 до 4000ms (4 секунды)
+      }, 6000); // ИЗМЕНЕНО: увеличил с 4000 до 6000ms (6 секунд)
     }
     
     // Возвращаем данные игры с обратной совместимостью
@@ -769,7 +769,7 @@ router.post('/:gameId/action', async (req, res) => {
       // Добавляем ЗНАЧИТЕЛЬНУЮ задержку чтобы избежать бесконечного цикла
       setTimeout(() => {
         processBotAction(gameId);
-      }, 5000); // ИЗМЕНЕНО: увеличил с 2000 до 5000ms (5 секунд) для более медленной игры
+      }, 8000); // ИЗМЕНЕНО: увеличил с 5000 до 8000ms (8 секунд) для более медленной игры
     } else {
       console.log('[ACTION] Цепочка ботов остановлена');
       if (game.status !== 'playing') {
@@ -1690,7 +1690,7 @@ async function advanceToNextRound(game) {
       } catch (error) {
         console.error('[ROUND] Ошибка при запуске бота:', error);
       }
-    }, 3000); // УВЕЛИЧЕНО с 1000 до 3000 мс
+    }, 6000); // УВЕЛИЧЕНО с 3000 до 6000 мс
   } else {
     console.log(`[ROUND] Первый игрок нового раунда: ${currentPlayer?.username} (isBot: ${currentPlayer?.isBot})`);
   }
