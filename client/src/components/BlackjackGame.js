@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAuth } from '../contexts/AuthContext';
 import './BlackjackGame.css';
-import bgTexture from '../assets/bagraund.png';
+import bgTexture from '../assets/texture_black.png';
 import backCardImage from '../assets/Back.png';
 import defaultAvatar from '../assets/default_avatar.png';
 import avatar from '../assets/avatar.png';
+import chipsIcon from '../assets/Black_Poker_Chips.png';
 import { createDeck, shuffleDeck, getCardImage, calculateHandValue } from '../utils/DeckUtils';
 import BetControls from './BetControls';
 import { updateUserChips, fetchInitialChips } from '../redux/slices/userSlice';
@@ -289,7 +290,7 @@ function BlackjackGame({ gameId }) {
       <div className="bank-info">
         <div className="bank-content">
           <span className="bank-label">Bank:</span>
-          <span className="bank-value">{chips} <img src="/assets/Black_Poker_Chips.png" alt="фішки" style={{width: '20px', height: '20px', marginLeft: '5px'}} /></span>
+          <span className="bank-value">{chips} <img src={chipsIcon} alt="фішки" style={{width: '20px', height: '20px', marginLeft: '5px'}} /></span>
         </div>
       </div>
 

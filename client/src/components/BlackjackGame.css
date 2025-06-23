@@ -353,7 +353,7 @@ button:hover:after {
 
 /* Зоны карт */
 .dealer-section {
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .player-section {
@@ -782,7 +782,7 @@ button:hover:after {
 }
 
 .dealer-section {
-  margin-top: 50px;
+  margin-top: 20px;
 }
 
 .player-section {
@@ -792,7 +792,7 @@ button:hover:after {
   align-items: center;
   padding: 20px;
   position: relative;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
 }
 
 .player-info {
