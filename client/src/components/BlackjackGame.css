@@ -309,21 +309,21 @@ button:hover:after {
 
 .chip-button:hover:not(:disabled) {
   transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 215, 0, 0.5);
-  border-color: #FFED4E;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 215, 0, 0.3);
+  border-color: #DAA520;
 }
 
 .chip-button.selected {
-  background: linear-gradient(45deg, #DAA520, #FFD700);
+  background: linear-gradient(45deg, #B8860B, #DAA520);
   border-color: white;
   transform: scale(1.15);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.8);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.4);
   animation: selectedPulse 1.5s infinite ease-in-out;
 }
 
 @keyframes selectedPulse {
-  0%, 100% { box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 215, 0, 0.8); }
-  50% { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 215, 0, 1); }
+  0%, 100% { box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.4); }
+  50% { box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 215, 0, 0.6); }
 }
 
 .chip-button:disabled {

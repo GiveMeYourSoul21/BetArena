@@ -8,7 +8,7 @@ const BetControls = ({ currentBet, maxBet, minBet, onBetChange, onPlaceBet, chip
     <div className="bet-controls">
       <h3 className="bet-title">Розмістіть ставку</h3>
       <div className="chips-display">
-        <span>💰 Ваші фішки: <strong style={{color: '#FFD700'}}>{chips}</strong></span>
+        <span>Ваші фішки: <strong style={{color: '#FFD700'}}>{chips}</strong></span>
       </div>
       <div className="bet-buttons">
         {betOptions.map((bet) => (
@@ -23,7 +23,7 @@ const BetControls = ({ currentBet, maxBet, minBet, onBetChange, onPlaceBet, chip
         ))}
       </div>
       <div className="bet-amount">
-        <span>🎯 Поточна ставка: <strong style={{color: '#FFD700'}}>{currentBet}</strong></span>
+        <span>Поточна ставка: <strong style={{color: '#FFD700'}}>{currentBet}</strong></span>
       </div>
       <div className="bet-slider" style={{ margin: '25px 0', padding: '0 20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', color: '#FFD700', fontSize: '14px' }}>
@@ -48,9 +48,6 @@ const BetControls = ({ currentBet, maxBet, minBet, onBetChange, onPlaceBet, chip
               cursor: 'pointer'
             }}
           />
-        </div>
-        <div style={{ textAlign: 'center', color: '#FFD700', marginTop: '12px', fontSize: '20px', fontWeight: 'bold' }}>
-          {currentBet} фішок
         </div>
       </div>
       <button

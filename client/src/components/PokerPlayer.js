@@ -116,8 +116,8 @@ const PokerPlayer = ({
         return { bottom: '95px', left: '50%', transform: 'translateX(-50%)' };
       case 90: // Слева (Bot 1) - піднімаємо трохи вище
         return { bottom: '35px', left: '50%', transform: 'translateX(-50%)' };
-      case 180: // Сверху (Bot 2) - піднімаємо значно вище
-        return { top: '75px', left: '50%', transform: 'translateX(-50%)' };
+      case 180: // Сверху (Bot 2) - піднімаємо ще вище
+        return { top: '55px', left: '50%', transform: 'translateX(-50%)' };
       case 270: // Справа (Bot 3) - піднімаємо трохи вище
         return { bottom: '35px', left: '50%', transform: 'translateX(-50%)' };
       default:
